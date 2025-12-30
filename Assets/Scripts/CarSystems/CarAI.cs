@@ -105,7 +105,7 @@ namespace Assets.Scripts.CarSystems
             pos2D.x = pos.x - _lastRoadOffset.x;
             pos2D.y = pos.z - _lastRoadOffset.y;
 
-            float velocity = _rigidBody.velocity.magnitude;
+            float velocity = _rigidBody.linearVelocity.magnitude;
             float distanceTreshold = Constants.PathMinDistanceTreshold;
 
             // Find the closest road point.

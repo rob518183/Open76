@@ -151,7 +151,7 @@ namespace Assets.Scripts.CarSystems
 
             if (_surfaceAudioSource != null)
             {
-                _surfaceAudioSource.volume = Mathf.Min(_rigidbody.velocity.magnitude * 0.025f, 0.6f);
+                _surfaceAudioSource.volume = Mathf.Min(_rigidbody.linearVelocity.magnitude * 0.025f, 0.6f);
                 if (!_surfaceAudioSource.isPlaying)
                 {
                     _surfaceAudioSource.Play();
@@ -200,7 +200,7 @@ namespace Assets.Scripts.CarSystems
 
             _airTime = 0.0f;
             UpdateSurfaceSound();
-            Vector3 vel3d = transform.InverseTransformVector(_rigidbody.velocity);
+            Vector3 vel3d = transform.InverseTransformVector(_rigidbody.linearVelocity);
 
             _carVelocity = new Vector2(vel3d.z, vel3d.x);
 
@@ -212,7 +212,7 @@ namespace Assets.Scripts.CarSystems
 
             if (Mathf.Abs(Throttle) < 0.1 && Mathf.Abs(_speed) < 0.5f)
             {
-                _rigidbody.velocity = Vector3.zero;
+                _rigidbody.linearVelocity = Vector3.zero;
                 _carVelocity = Vector2.zero;
                 _speed = 0;
                 _rigidbody.angularVelocity = Vector3.zero;
@@ -273,7 +273,7 @@ namespace Assets.Scripts.CarSystems
             _carAcceleration = Time.deltaTime * forces / _rigidbody.mass;
 
             Vector3 worldAcceleration = transform.TransformVector(new Vector3(_carAcceleration.y, 0, _carAcceleration.x));
-            _rigidbody.velocity += worldAcceleration;
+            _rigidbody.linearVelocity += worldAcceleration;
         }
 
         //private void OnGUI()

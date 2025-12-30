@@ -320,7 +320,7 @@ namespace Assets.Scripts.Entities
                 const float minPitch = 0.6f;
                 const float maxPitch = 1.2f;
 
-                float velocity = _rigidBody.velocity.magnitude;
+                float velocity = _rigidBody.linearVelocity.magnitude;
                 float gearMaxSpeed = firstGearTopSpeed;
                 while (velocity / gearMaxSpeed > maxPitch - minPitch)
                 {
@@ -446,7 +446,7 @@ namespace Assets.Scripts.Entities
 
         public void SetSpeed(int targetSpeed)
         {
-            _rigidBody.velocity = _transform.forward * targetSpeed;
+            _rigidBody.linearVelocity = _transform.forward * targetSpeed;
         }
 
         public bool AtFollowTarget()

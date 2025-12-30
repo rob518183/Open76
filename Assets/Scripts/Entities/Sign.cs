@@ -42,7 +42,7 @@ namespace Assets.Scripts.Entities
             }
 
             Rigidbody rigidBody = collider.gameObject.GetComponentInParent<Rigidbody>();
-            if (rigidBody != null && rigidBody.velocity.magnitude > 2)
+            if (rigidBody != null && rigidBody.linearVelocity.magnitude > 2)
             {
                 _dead = true;
                 foreach (MeshCollider c in _colliders)
