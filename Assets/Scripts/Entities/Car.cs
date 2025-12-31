@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Assets.Scripts.Camera;
 using Assets.Scripts.CarSystems;
 using Assets.Scripts.CarSystems.Ui;
@@ -15,237 +17,89 @@ namespace Assets.Scripts.Entities
         Force
     }
 
+    [RequireComponent(typeof(Rigidbody))]
+    [RequireComponent(typeof(CarPhysics))]
     public class Car : WorldEntity
     {
         public static bool FireWeapons;
 
-        private const int VehicleStartHealth = 550; // TODO: Figure out where this is stored?
-        private const int CoreStartHealth = 250; // TODO: Figure out where this is stored?
-        private const int TireStartHealth = 100; // TODO: Parse.
+        // Constants
+        private const int VehicleStartHealth = 550;
+        private const int CoreStartHealth = 250;
+        private const int TireStartHealth = 100;
 
+        // Components & References
         private Transform _transform;
         private Rigidbody _rigidBody;
+        private CarPhysics _carPhysics;
+        private CameraController _camera;
+        private AudioSource _engineStartSound;
+        private AudioSource _engineLoopSound;
+        private Transform _thirdPersonChassis;
 
+        // Controllers
         public WeaponsController WeaponsController;
         public SpecialsController SpecialsController;
         public SystemsPanel SystemsPanel;
         public GearPanel GearPanel;
         public RadarPanel RadarPanel;
+        public CarAI AI { get; private set; }
         private CompassPanel _compassPanel;
-        private CameraController _camera;
+
+        // State Data
         private int _vehicleHealthGroups;
         private int _currentVehicleHealthGroup;
-        private AudioSource _engineStartSound;
-        private AudioSource _engineLoopSound;
         private bool _engineStarting;
         private float _engineStartTimer;
-        private GameObject _gameObject;
-        private CacheManager _cacheManager;
+        
+        // Health Data
         private int[] _vehicleHitPoints;
         private int[] _vehicleStartHitPoints;
+        private Dictionary<int, List<Transform>> _visualDamageParts; // Cached visual parts
 
+        // Properties
         public bool EngineRunning { get; private set; }
         public bool Arrived { get; set; }
         public Vdf Vdf { get; private set; }
         public Vcf Vcf { get; private set; }
-
-        public override bool Alive
-        {
-            get { return GetComponentHealth(SystemType.Vehicle) > 0; }
-        }
-
         public bool Attacked { get; private set; }
         public int TeamId { get; set; }
         public bool IsPlayer { get; set; }
         public int Skill1 { get; set; }
         public int Skill2 { get; set; }
         public int Aggressiveness { get; set; }
-        
-        public CarAI AI { get; private set; }
 
-        private CarPhysics _carPhysics;
-
-        private int GetComponentHealth(SystemType healthType)
+        public override bool Alive
         {
-            return _vehicleHitPoints[(int)healthType];
-        }
-
-        private int GetHealthGroup(SystemType system)
-        {
-            int systemValue = (int)system;
-            int healthGroupCount;
-            int startHealth;
-
-            if (system == SystemType.Vehicle)
-            {
-                healthGroupCount = _vehicleHealthGroups;
-                startHealth = _vehicleStartHitPoints[systemValue];
-            }
-            else
-            {
-                healthGroupCount = 5;
-                startHealth = _vehicleStartHitPoints[systemValue];
-            }
-            
-            if (_vehicleHitPoints[systemValue] <= 0)
-            {
-                return healthGroupCount - 1;
-            }
-
-            --healthGroupCount;
-            int healthGroup = Mathf.CeilToInt(_vehicleHitPoints[systemValue] / (float)startHealth * healthGroupCount);
-            return healthGroupCount - healthGroup;
-        }
-
-        private void SetComponentHealth(SystemType system, int value)
-        {
-            if (!Alive)
-            {
-                return;
-            }
-
-            _vehicleHitPoints[(int)system] = value;
-            
-            if (system == SystemType.Vehicle)
-            {
-                SetHealthGroup(GetHealthGroup(system));
-                if (value <= 0)
-                {
-                    Explode();
-                }
-            }
-            else
-            {
-                int newValue = _vehicleHitPoints[(int)system];
-                if (newValue < 0)
-                {
-                    SystemType coreComponent = GetCoreComponent();
-                    SetComponentHealth(coreComponent, _vehicleHitPoints[(int)coreComponent] + newValue);
-                    _vehicleHitPoints[(int)system] = 0;
-                }
-            }
-
-            // Update UI
-            if (SystemsPanel != null && system != SystemType.Vehicle)
-            {
-                SystemsPanel.SetSystemHealthGroup(system, GetHealthGroup(system), true);
-            }
-        }
-
-        private SystemType GetCoreComponent()
-        {
-            SystemType system;
-
-            SystemType[] coreSystems =
-            {
-                SystemType.Vehicle,
-                SystemType.Brakes,
-                SystemType.Engine,
-                SystemType.Suspension
-            };
-
-            int iterations = 0;
-            const int maxIterations = 20;
-
-            do
-            {
-                int coreIndex = Random.Range(0, coreSystems.Length);
-                system = coreSystems[coreIndex];
-                ++iterations;
-            } while (GetComponentHealth(system) == 0 && iterations < maxIterations);
-
-            if (iterations == maxIterations)
-            {
-                return SystemType.Vehicle;
-            }
-
-            return system;
-        }
-
-        public override void ApplyDamage(DamageType damageType, Vector3 normal, int damageAmount)
-        {
-            float angle = Quaternion.FromToRotation(Vector3.up, normal).eulerAngles.z;
-
-            // TODO: Figure out how tire damage should be applied here.
-
-            SystemType system;
-            switch (damageType)
-            {
-                case DamageType.Force:
-                    if (angle >= 45f && angle < 135f)
-                    {
-                        system = SystemType.RightChassis;
-                    }
-                    else if (angle >= 135f && angle < 225f)
-                    {
-                        system = SystemType.BackChassis;
-                    }
-                    else if (angle >= 225f && angle < 315f)
-                    {
-                        system = SystemType.LeftChassis;
-                    }
-                    else
-                    {
-                        system = SystemType.FrontChassis;
-                    }
-                    break;
-                case DamageType.Projectile:
-                    if (angle >= 45f && angle < 135f)
-                    {
-                        system = SystemType.RightArmor;
-                    }
-                    else if (angle >= 135f && angle < 225f)
-                    {
-                        system = SystemType.BackArmor;
-                    }
-                    else if (angle >= 225f && angle < 315f)
-                    {
-                        system = SystemType.LeftArmor;
-                    }
-                    else
-                    {
-                        system = SystemType.FrontArmor;
-                    }
-                    break;
-                default:
-                    throw new NotSupportedException("Invalid damage type.");
-            }
-
-            int currentHealth = GetComponentHealth(system);
-            SetComponentHealth(system, currentHealth - damageAmount);
-        }
-
-        public void ToggleEngine()
-        {
-            if (_engineStartSound == null || _engineStartSound.isPlaying)
-            {
-                return;
-            }
-
-            if (EngineRunning)
-            {
-                _engineLoopSound.Stop();
-                EngineRunning = false;
-            }
-            else
-            {
-                _engineStartSound.Play();
-                _engineStarting = true;
-                _engineStartTimer = 0f;
-            }
+            get { return GetComponentHealth(SystemType.Vehicle) > 0; }
         }
 
         private void Awake()
         {
             _transform = transform;
-            _gameObject = gameObject;
-            _cacheManager = CacheManager.Instance;
-            _carPhysics = GetComponent<CarPhysics>();
-            AI = new CarAI(this);
-            _camera = CameraManager.Instance.MainCamera.GetComponent<CameraController>();
             _rigidBody = GetComponent<Rigidbody>();
+            _carPhysics = GetComponent<CarPhysics>();
+            
+            // Safety check for Camera Manager
+            if (CameraManager.Instance.MainCamera != null)
+            {
+                _camera = CameraManager.Instance.MainCamera.GetComponent<CameraController>();
+            }
+
+            AI = new CarAI(this);
             EngineRunning = true;
             _currentVehicleHealthGroup = 1;
+            _visualDamageParts = new Dictionary<int, List<Transform>>();
+        }
+
+        private void Start()
+        {
+            EntityManager.Instance.RegisterCar(this);
+            UpdateEngineSounds();
+
+            Transform firstPersonTransform = _transform.Find("Chassis/FirstPerson");
+            WeaponsController = new WeaponsController(this, Vcf, firstPersonTransform);
+            SpecialsController = new SpecialsController(Vcf, firstPersonTransform);
         }
 
         public void Configure(Vdf vdf, Vcf vcf)
@@ -255,50 +109,74 @@ namespace Assets.Scripts.Entities
 
             _vehicleHealthGroups = Vdf.PartsThirdPerson.Count;
 
-            int systemCount = (int) SystemType.TotalSystems;
+            // Initialize Health
+            InitializeHealthData();
+
+            // Cache Visuals
+            CacheDamageVisuals();
+        }
+
+        private void InitializeHealthData()
+        {
+            int systemCount = (int)SystemType.TotalSystems;
             _vehicleHitPoints = new int[systemCount];
             _vehicleStartHitPoints = new int[systemCount];
 
+            // Core
             _vehicleStartHitPoints[(int)SystemType.Vehicle] = VehicleStartHealth;
             _vehicleStartHitPoints[(int)SystemType.Suspension] = CoreStartHealth;
             _vehicleStartHitPoints[(int)SystemType.Brakes] = CoreStartHealth;
             _vehicleStartHitPoints[(int)SystemType.Engine] = CoreStartHealth;
 
-            _vehicleStartHitPoints[(int)SystemType.FrontArmor] = (int)vcf.ArmorFront;
-            _vehicleStartHitPoints[(int)SystemType.RightArmor] = (int)vcf.ArmorRight;
-            _vehicleStartHitPoints[(int)SystemType.BackArmor] = (int)vcf.ArmorRear;
-            _vehicleStartHitPoints[(int)SystemType.LeftArmor] = (int)vcf.ArmorLeft;
+            // Armor
+            _vehicleStartHitPoints[(int)SystemType.FrontArmor] = (int)Vcf.ArmorFront;
+            _vehicleStartHitPoints[(int)SystemType.RightArmor] = (int)Vcf.ArmorRight;
+            _vehicleStartHitPoints[(int)SystemType.BackArmor] = (int)Vcf.ArmorRear;
+            _vehicleStartHitPoints[(int)SystemType.LeftArmor] = (int)Vcf.ArmorLeft;
 
-            _vehicleStartHitPoints[(int)SystemType.FrontChassis] = (int)vcf.ChassisFront;
-            _vehicleStartHitPoints[(int)SystemType.RightChassis] = (int)vcf.ChassisRight;
-            _vehicleStartHitPoints[(int)SystemType.BackChassis] = (int)vcf.ChassisRear;
-            _vehicleStartHitPoints[(int)SystemType.LeftChassis] = (int)vcf.ChassisLeft;
+            // Chassis
+            _vehicleStartHitPoints[(int)SystemType.FrontChassis] = (int)Vcf.ChassisFront;
+            _vehicleStartHitPoints[(int)SystemType.RightChassis] = (int)Vcf.ChassisRight;
+            _vehicleStartHitPoints[(int)SystemType.BackChassis] = (int)Vcf.ChassisRear;
+            _vehicleStartHitPoints[(int)SystemType.LeftChassis] = (int)Vcf.ChassisLeft;
 
+            // Tires
             _vehicleStartHitPoints[(int)SystemType.TireFL] = TireStartHealth;
             _vehicleStartHitPoints[(int)SystemType.TireFR] = TireStartHealth;
             _vehicleStartHitPoints[(int)SystemType.TireBL] = TireStartHealth;
             _vehicleStartHitPoints[(int)SystemType.TireBR] = TireStartHealth;
 
-            for (int i = 0; i < systemCount; ++i)
-            {
-                _vehicleHitPoints[i] = _vehicleStartHitPoints[i];
-            }
+            // Reset current HP to max
+            Array.Copy(_vehicleStartHitPoints, _vehicleHitPoints, systemCount);
         }
 
-        private void Start()
+        private void CacheDamageVisuals()
         {
-            EntityManager.Instance.RegisterCar(this);
+            _thirdPersonChassis = transform.Find("Chassis/ThirdPerson");
+            if (_thirdPersonChassis == null) return;
 
-            UpdateEngineSounds();
-
-            Transform firstPersonTransform = _transform.Find("Chassis/FirstPerson");
-            WeaponsController = new WeaponsController(this, Vcf, firstPersonTransform);
-            SpecialsController = new SpecialsController(Vcf, firstPersonTransform);
+            // We expect child objects named "Health 0", "Health 1", etc.
+            // We group them here so we don't have to .Find() them during combat
+            for (int i = 0; i < _vehicleHealthGroups; ++i)
+            {
+                var part = _thirdPersonChassis.Find("Health " + i);
+                if (part != null)
+                {
+                    // If you have multiple parts per group, logic goes here. 
+                    // Assuming 1:1 mapping based on original code.
+                    if (!_visualDamageParts.ContainsKey(i))
+                        _visualDamageParts[i] = new List<Transform>();
+                    
+                    _visualDamageParts[i].Add(part);
+                }
+            }
         }
 
         public void InitPanels()
         {
             Transform firstPersonTransform = _transform.Find("Chassis/FirstPerson");
+            if (firstPersonTransform == null) return;
+
             SystemsPanel = new SystemsPanel(firstPersonTransform);
             GearPanel = new GearPanel(firstPersonTransform);
             _compassPanel = new CompassPanel(firstPersonTransform);
@@ -307,27 +185,44 @@ namespace Assets.Scripts.Entities
 
         private void Update()
         {
-            if (!Alive)
-            {
-                return;
-            }
+            if (!Alive) return;
 
-            if (EngineRunning)
+            HandleEngineAudio();
+            HandleUIUpdates();
+            HandleAIAndWeapons();
+        }
+
+        private void HandleEngineAudio()
+        {
+            if (EngineRunning && _engineLoopSound != null)
             {
-                // Simple and temporary engine pitch adjustment code based on rigidbody velocity - should be using wheels.
+                // Replaced 'while' loop with math for safety and performance
                 const float firstGearTopSpeed = 40f;
                 const float gearRatioAdjustment = 1.5f;
                 const float minPitch = 0.6f;
                 const float maxPitch = 1.2f;
 
-                float velocity = _rigidBody.linearVelocity.magnitude;
-                float gearMaxSpeed = firstGearTopSpeed;
-                while (velocity / gearMaxSpeed > maxPitch - minPitch)
+                // Unity 6 uses linearVelocity, older uses velocity. 
+                // Using velocity for LTS compatibility.
+                float velocity = _rigidBody.linearVelocity.magnitude; 
+                
+                float currentGearMax = firstGearTopSpeed;
+                
+                // Simulate gear shifting mathematically
+                // If velocity > gearMax, we are in higher gears
+                while (velocity > currentGearMax && currentGearMax < 200f) // Cap at 200 to prevent infinite
                 {
-                    gearMaxSpeed *= gearRatioAdjustment;
+                    currentGearMax *= gearRatioAdjustment;
                 }
 
-                float enginePitch = minPitch + velocity / gearMaxSpeed;
+                // Calculate ratio within current gear
+                float gearStartSpeed = currentGearMax / gearRatioAdjustment;
+                float ratio = (velocity - gearStartSpeed) / (currentGearMax - gearStartSpeed);
+                // Clamp ratio for safety (0 to 1)
+                ratio = Mathf.Clamp01(Mathf.Max(0, (velocity - (currentGearMax/gearRatioAdjustment)) / (currentGearMax - (currentGearMax/gearRatioAdjustment))));
+                
+                // Simplified pitch logic
+                float enginePitch = Mathf.Lerp(minPitch, maxPitch, (velocity / currentGearMax));
                 _engineLoopSound.pitch = enginePitch;
             }
 
@@ -342,43 +237,187 @@ namespace Assets.Scripts.Entities
                     _engineStartTimer = 0f;
                 }
             }
+        }
 
-            if (_camera.FirstPerson)
+        private void HandleUIUpdates()
+        {
+            if (_camera != null && _camera.FirstPerson)
             {
                 if (_compassPanel != null)
-                {
                     _compassPanel.UpdateCompassHeading(_transform.eulerAngles.y);
-                }
-            }
-            
-            // Always process radar panel, even outside first person view.
-            if (RadarPanel != null)
-            {
-                RadarPanel.Update();
             }
 
-            if (!IsPlayer || !CameraManager.Instance.IsMainCameraActive)
+            if (RadarPanel != null)
+                RadarPanel.Update();
+        }
+
+        private void HandleAIAndWeapons()
+        {
+            bool mainCameraActive = CameraManager.Instance.IsMainCameraActive;
+
+            if (!IsPlayer || !mainCameraActive)
             {
                 AI.Navigate();
             }
 
-            if (!IsPlayer && FireWeapons)
+            if (!IsPlayer && FireWeapons && WeaponsController != null)
             {
-                if (WeaponsController != null)
+                WeaponsController.Fire(0);
+            }
+        }
+
+        // --- Health & Damage System ---
+
+        public override void ApplyDamage(DamageType damageType, Vector3 normal, int damageAmount)
+        {
+            // Determine quadrant based on angle
+            float angle = Quaternion.FromToRotation(Vector3.up, normal).eulerAngles.z;
+            SystemType targetSystem = GetSystemFromAngle(angle, damageType);
+
+            int currentHealth = GetComponentHealth(targetSystem);
+            SetComponentHealth(targetSystem, currentHealth - damageAmount);
+        }
+
+        private SystemType GetSystemFromAngle(float angle, DamageType type)
+        {
+            // Normalize angle to 0-360
+            if (angle < 0) angle += 360f;
+
+            // Quadrant Logic
+            // Front: 315 - 45
+            // Right: 45 - 135
+            // Back:  135 - 225
+            // Left:  225 - 315
+
+            bool isRight = angle >= 45f && angle < 135f;
+            bool isBack = angle >= 135f && angle < 225f;
+            bool isLeft = angle >= 225f && angle < 315f;
+            
+            if (type == DamageType.Force)
+            {
+                if (isRight) return SystemType.RightChassis;
+                if (isBack) return SystemType.BackChassis;
+                if (isLeft) return SystemType.LeftChassis;
+                return SystemType.FrontChassis;
+            }
+            else // Projectile
+            {
+                if (isRight) return SystemType.RightArmor;
+                if (isBack) return SystemType.BackArmor;
+                if (isLeft) return SystemType.LeftArmor;
+                return SystemType.FrontArmor;
+            }
+        }
+
+        private int GetComponentHealth(SystemType healthType)
+        {
+            return _vehicleHitPoints[(int)healthType];
+        }
+
+        private void SetComponentHealth(SystemType system, int value)
+        {
+            if (!Alive) return;
+
+            int sysIndex = (int)system;
+            _vehicleHitPoints[sysIndex] = value;
+
+            if (system == SystemType.Vehicle)
+            {
+                UpdateVisualHealthGroup(GetHealthGroup(system));
+                if (value <= 0) Explode();
+            }
+            else
+            {
+                // Pass through damage to core if component destroyed
+                if (_vehicleHitPoints[sysIndex] < 0)
                 {
-                    WeaponsController.Fire(0);
+                    int overflowDamage = _vehicleHitPoints[sysIndex]; // This is negative
+                    _vehicleHitPoints[sysIndex] = 0;
+
+                    SystemType coreComponent = GetCoreComponent();
+                    SetComponentHealth(coreComponent, GetComponentHealth(coreComponent) + overflowDamage);
+                }
+            }
+
+            // Update UI
+            if (SystemsPanel != null && system != SystemType.Vehicle)
+            {
+                SystemsPanel.SetSystemHealthGroup(system, GetHealthGroup(system), true);
+            }
+        }
+
+        private void UpdateVisualHealthGroup(int healthGroupIndex)
+        {
+            if (_currentVehicleHealthGroup == healthGroupIndex) return;
+
+            _currentVehicleHealthGroup = healthGroupIndex;
+
+            // Optimized: Use cached dictionary instead of .Find()
+            foreach (var kvp in _visualDamageParts)
+            {
+                int groupIndex = kvp.Key;
+                bool isActive = (groupIndex == healthGroupIndex);
+                
+                foreach(var part in kvp.Value)
+                {
+                    if(part.gameObject.activeSelf != isActive)
+                        part.gameObject.SetActive(isActive);
                 }
             }
         }
-        
-        private void SetHealthGroup(int healthGroupIndex)
+
+        private int GetHealthGroup(SystemType system)
         {
-            _currentVehicleHealthGroup = healthGroupIndex;
-            Transform parent = transform.Find("Chassis/ThirdPerson");
-            for (int i = 0; i < _vehicleHealthGroups; ++i)
+            int sysIndex = (int)system;
+            int startHealth = _vehicleStartHitPoints[sysIndex];
+            int currentHealth = _vehicleHitPoints[sysIndex];
+
+            // If dead, return the last group (most damaged)
+            int healthGroupCount = (system == SystemType.Vehicle) ? _vehicleHealthGroups : 5;
+            
+            if (currentHealth <= 0) return healthGroupCount - 1;
+
+            // Calculate percentage
+            float pct = (float)currentHealth / startHealth;
+            // Map percentage to group index (inverted: 100% is group 0, 0% is group MAX)
+            int group = Mathf.CeilToInt(pct * (healthGroupCount - 1));
+            
+            return (healthGroupCount - 1) - group;
+        }
+
+        private SystemType GetCoreComponent()
+        {
+            SystemType[] coreSystems = {
+                SystemType.Vehicle, SystemType.Brakes, SystemType.Engine, SystemType.Suspension
+            };
+
+            // Filter for only alive systems to avoid infinite loops
+            var aliveSystems = coreSystems.Where(s => GetComponentHealth(s) > 0).ToList();
+
+            if (aliveSystems.Count > 0)
             {
-                Transform child = parent.Find("Health " + i);
-                child.gameObject.SetActive(healthGroupIndex == i);
+                return aliveSystems[Random.Range(0, aliveSystems.Count)];
+            }
+
+            return SystemType.Vehicle; // Fallback
+        }
+
+        // --- Core Mechanics ---
+
+        public void ToggleEngine()
+        {
+            if (_engineStartSound == null || _engineStartSound.isPlaying) return;
+
+            if (EngineRunning)
+            {
+                _engineLoopSound.Stop();
+                EngineRunning = false;
+            }
+            else
+            {
+                _engineStartSound.Play();
+                _engineStarting = true;
+                _engineStartTimer = 0f;
             }
         }
 
@@ -386,38 +425,40 @@ namespace Assets.Scripts.Entities
         {
             _rigidBody.AddForce(Vector3.up * _rigidBody.mass * 5f, ForceMode.Impulse);
 
-            CarInput carInputController = GetComponent<CarInput>();
-            if (carInputController != null)
-            {
-                Destroy(carInputController);
-            }
+            CarInput carInput = GetComponent<CarInput>();
+            if (carInput != null) Destroy(carInput);
 
-            AudioSource explosionSource = _cacheManager.GetAudioSource(_gameObject, "xcar");
-            if (explosionSource != null)
+            AudioSource explosion = CacheManager.Instance.GetAudioSource(gameObject, "xcar");
+            if (explosion != null)
             {
-                explosionSource.volume = 0.9f;
-                explosionSource.Play();
+                explosion.volume = 0.9f;
+                explosion.Play();
             }
 
             EngineRunning = false;
-            Destroy(_engineLoopSound);
-            Destroy(_engineStartSound);
+            if(_engineLoopSound) Destroy(_engineLoopSound);
+            if(_engineStartSound) Destroy(_engineStartSound);
 
-            Destroy(_carPhysics);
+            // Cleanup Components
+            if(_carPhysics) Destroy(_carPhysics);
             _carPhysics = null;
             AI = null;
-
             WeaponsController = null;
             SpecialsController = null;
             SystemsPanel = null;
-            GearPanel = null;
-            _compassPanel = null;
             RadarPanel = null;
+            
+            // Visual Detachment (Using Find here is acceptable as it happens once on death)
+            DetachPart("FrontLeft");
+            DetachPart("FrontRight");
+            DetachPart("BackLeft");
+            DetachPart("BackRight");
+        }
 
-            Destroy(transform.Find("FrontLeft").gameObject);
-            Destroy(transform.Find("FrontRight").gameObject);
-            Destroy(transform.Find("BackLeft").gameObject);
-            Destroy(transform.Find("BackRight").gameObject);
+        private void DetachPart(string partName)
+        {
+            Transform t = transform.Find(partName);
+            if (t != null) Destroy(t.gameObject);
         }
 
         public void Kill()
@@ -427,137 +468,68 @@ namespace Assets.Scripts.Entities
 
         public void Sit()
         {
-            _carPhysics.Brake = 1.0f;
-            AI.Sit();
+            if(_carPhysics != null) _carPhysics.Brake = 1.0f;
+            if(AI != null) AI.Sit();
         }
 
-        private void OnDrawGizmos()
-        {
-            if (AI != null)
-            {
-                AI.DrawGizmos();
-            }
-        }
-
-        private void OnDestroy()
-        {
-            EntityManager.Instance.UnregisterCar(this);
-        }
+        // --- AI Delegates ---
 
         public void SetSpeed(int targetSpeed)
         {
             _rigidBody.linearVelocity = _transform.forward * targetSpeed;
         }
 
-        public bool AtFollowTarget()
-        {
-            if (AI != null)
-            {
-                return AI.AtFollowTarget();
-            }
+        public bool AtFollowTarget() => AI != null && AI.AtFollowTarget();
+        public void SetFollowTarget(Car targetCar, int xOffset, int targetSpeed) => AI?.SetFollowTarget(targetCar, xOffset, targetSpeed);
+        public void SetTargetPath(FSMPath path, int targetSpeed) => AI?.SetTargetPath(path, targetSpeed);
+        public bool IsWithinNav(FSMPath path, int distance) => AI != null && AI.IsWithinNav(path, distance);
 
-            return false;
+        private void OnDrawGizmos()
+        {
+            if (AI != null) AI.DrawGizmos();
         }
 
-        public void SetFollowTarget(Car targetCar, int xOffset, int targetSpeed)
+        private void OnDestroy()
         {
-            if (AI != null)
-            {
-                AI.SetFollowTarget(targetCar, xOffset, targetSpeed);
-            }
-        }
-
-        public void SetTargetPath(FSMPath path, int targetSpeed)
-        {
-            if (AI != null)
-            {
-                AI.SetTargetPath(path, targetSpeed);
-            }
-        }
-
-        public bool IsWithinNav(FSMPath path, int distance)
-        {
-            if (AI != null)
-            {
-                return AI.IsWithinNav(path, distance);
-            }
-
-            return false;
+            if(EntityManager.Instance != null)
+                EntityManager.Instance.UnregisterCar(this);
         }
 
         private void UpdateEngineSounds()
         {
-            string engineStartSound;
-            string engineLoopSound;
+            string startName = "";
+            string loopName = "";
 
             switch (Vdf.VehicleSize)
             {
-                case 1: // Small car
-                    engineLoopSound = "eishp";
-                    engineStartSound = "esshp";
-                    engineStartSound += _currentVehicleHealthGroup;
-                    break;
-                case 2: // Medium car
-                    engineLoopSound = "eihp";
-                    engineStartSound = "eshp";
-                    engineStartSound += _currentVehicleHealthGroup;
-                    break;
-                case 3: // Large car
-                    engineLoopSound = "einp1";
-                    engineStartSound = "esnp";
-                    engineStartSound += _currentVehicleHealthGroup;
-                    break;
-                case 4: // Van
-                    engineLoopSound = "eisv";
-                    engineStartSound = "essv";
-                    break;
-                case 5: // Heavy vehicle
-                    engineLoopSound = "eimarx";
-                    engineStartSound = "esmarx";
-                    break;
-                case 6: // Tank
-                    engineLoopSound = "eitank";
-                    engineStartSound = "estank";
-                    break;
-                default:
-                    Debug.LogWarningFormat("Unhandled vehicle size '{0}'. No vehicle sounds loaded.", Vdf.VehicleSize);
-                    return;
+                case 1: loopName = "eishp"; startName = "esshp" + _currentVehicleHealthGroup; break;
+                case 2: loopName = "eihp"; startName = "eshp" + _currentVehicleHealthGroup; break;
+                case 3: loopName = "einp1"; startName = "esnp" + _currentVehicleHealthGroup; break;
+                case 4: loopName = "eisv"; startName = "essv"; break; // Note: Van didn't have health group in original?
+                case 5: loopName = "eimarx"; startName = "esmarx"; break;
+                case 6: loopName = "eitank"; startName = "estank"; break;
+                default: Debug.LogWarning($"Unknown vehicle size {Vdf.VehicleSize}"); return;
             }
 
-            engineStartSound += ".gpw";
-            engineLoopSound += ".gpw";
-            if (_engineStartSound == null || _engineStartSound.clip.name != engineStartSound)
+            startName += ".gpw";
+            loopName += ".gpw";
+
+            ReplaceAudioSource(ref _engineStartSound, startName, false);
+            ReplaceAudioSource(ref _engineLoopSound, loopName, true);
+        }
+
+        private void ReplaceAudioSource(ref AudioSource source, string name, bool loop)
+        {
+            if (source != null && source.clip.name == name) return; // Already correct
+
+            if (source != null) Destroy(source);
+            
+            source = CacheManager.Instance.GetAudioSource(gameObject, name);
+            if (source != null)
             {
-                if (_engineStartSound != null)
-                {
-                    Destroy(_engineStartSound);
-                }
-
-                _engineStartSound = _cacheManager.GetAudioSource(_gameObject, engineStartSound);
-                if (_engineStartSound != null)
-                {
-                    _engineStartSound.volume = 0.6f;
-                }
-            }
-
-            if (_engineLoopSound == null || _engineLoopSound.clip.name != engineLoopSound)
-            {
-                if (_engineLoopSound != null)
-                {
-                    Destroy(_engineLoopSound);
-                }
-
-                _engineLoopSound = _cacheManager.GetAudioSource(_gameObject, engineLoopSound);
-                if (_engineLoopSound != null)
-                {
-                    _engineLoopSound.loop = true;
-                    _engineLoopSound.volume = 0.6f;
-
-                    if (EngineRunning)
-                    {
-                        _engineLoopSound.Play();
-                    }
-                }
+                source.volume = 0.6f;
+                source.loop = loop;
+                if (loop && EngineRunning) source.Play();
             }
         }
     }

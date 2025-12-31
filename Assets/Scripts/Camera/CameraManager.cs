@@ -6,18 +6,42 @@ namespace Assets.Scripts.Camera
     public class CameraManager
     {
         private readonly Stack<FSMCamera> _cameraStack;
-        private readonly GameObject _mainCameraObject;
+        private GameObject _mainCameraObject; // Changed to simple GameObject reference
         private bool _audioEnabled;
 
+        // Singleton Instance
+        private static CameraManager _instance;
+        public static CameraManager Instance
+        {
+            get
+            {
+                if (_instance == null)
+                    _instance = new CameraManager();
+                return _instance;
+            }
+        }
+
+        // Helper to safely get the Unity Camera component
         public UnityEngine.Camera MainCamera
         {
-            get { return _mainCameraObject != null ? _mainCameraObject.GetComponent<UnityEngine.Camera>() : null; }
+            get 
+            { 
+                // Safety check: If scene reloaded, this might be null or "missing"
+                if (_mainCameraObject == null) return null;
+                return _mainCameraObject.GetComponent<UnityEngine.Camera>(); 
+            }
         }
 
         public FSMCamera ActiveCamera
         {
             get
             {
+                // Clean up stack if objects were destroyed externally
+                while (_cameraStack.Count > 0 && _cameraStack.Peek() == null)
+                {
+                    _cameraStack.Pop();
+                }
+
                 if (_cameraStack.Count > 0)
                 {
                     return _cameraStack.Peek();
@@ -27,79 +51,105 @@ namespace Assets.Scripts.Camera
             }
         }
 
-        private static CameraManager _instance;
-
-        public static CameraManager Instance
-        {
-            get { return _instance ?? (_instance = new CameraManager()); }
-        }
-
         public bool AudioEnabled
         {
             get { return _audioEnabled; }
             set
             {
-                if (_audioEnabled == value)
-                {
-                    return;
-                }
-
                 _audioEnabled = value;
-                if (_cameraStack.Count > 0)
-                {
-                    var camera = _cameraStack.Peek();
-                    camera.GetComponent<AudioListener>().enabled = value;
-                }
-                else
-                {
-                    MainCamera.GetComponent<AudioListener>().enabled = value;
-                }
+                UpdateAudioListenerState();
             }
         }
 
         public bool IsMainCameraActive
         {
-            get { return MainCamera == ActiveCamera; }
+            get 
+            { 
+                if (MainCamera == null || ActiveCamera == null) return false;
+                // Compare GameObjects, not Component types
+                return MainCamera.gameObject == ActiveCamera.gameObject; 
+            }
         }
 
         private CameraManager()
         {
             _cameraStack = new Stack<FSMCamera>();
-            var mainCamera = Object.FindObjectOfType<FSMCamera>();
-            _mainCameraObject = mainCamera.gameObject;
-            _cameraStack.Push(mainCamera);
+            
+            // Find the initial FSMCamera in the scene
+			var mainCamera = Object.FindFirstObjectByType<FSMCamera>();
+            
+            if (mainCamera != null)
+            {
+                _mainCameraObject = mainCamera.gameObject;
+                _cameraStack.Push(mainCamera);
+            }
+            else
+            {
+                Debug.LogWarning("CameraManager: No FSMCamera found in scene on initialization.");
+            }
+
             _audioEnabled = true;
         }
         
         public void PushCamera()
         {
-            if (_cameraStack.Count > 0)
+            // 1. Disable current top camera
+            if (_cameraStack.Count > 0 && _cameraStack.Peek() != null)
             {
-                var camera = _cameraStack.Peek();
-                camera.gameObject.SetActive(false);
+                var currentCamera = _cameraStack.Peek();
+                currentCamera.gameObject.SetActive(false);
             }
 
-            GameObject newCameraObject = new GameObject("Stack Camera " + _cameraStack.Count);
+            // 2. Create new Camera
+            GameObject newCameraObject = new GameObject("Stack Camera " + (_cameraStack.Count + 1));
             newCameraObject.AddComponent<UnityEngine.Camera>();
+            // Copy clear flags/depth from main if needed? usually desirable.
+            
             var newCamera = newCameraObject.AddComponent<FSMCamera>();
             newCameraObject.AddComponent<AudioListener>();
+            
+            // 3. Push and Update Audio
             _cameraStack.Push(newCamera);
+            UpdateAudioListenerState();
         }
 
         public void PopCamera()
         {
-            if (_cameraStack.Count == 0)
+            if (_cameraStack.Count == 0) return;
+
+            // 1. Remove and Destroy current
+            var stackCamera = _cameraStack.Pop();
+            if (stackCamera != null)
             {
-                return;
+                Object.Destroy(stackCamera.gameObject);
             }
 
-            var stackCamera = _cameraStack.Pop();
-            Object.Destroy(stackCamera.gameObject);
-
+            // 2. Re-enable the previous camera
             if (_cameraStack.Count > 0)
             {
-                var camera = _cameraStack.Peek();
-                camera.gameObject.SetActive(false);
+                var previousCamera = _cameraStack.Peek();
+                if (previousCamera != null)
+                {
+                    // FIXED: Was SetActive(false), must be true to restore it
+                    previousCamera.gameObject.SetActive(true); 
+                    
+                    // Ensure audio state is correct for the restored camera
+                    UpdateAudioListenerState(); 
+                }
+            }
+        }
+
+        // Helper to apply audio settings to the CURRENTLY active camera
+        private void UpdateAudioListenerState()
+        {
+            var activeCam = ActiveCamera;
+            if (activeCam != null)
+            {
+                var listener = activeCam.GetComponent<AudioListener>();
+                if (listener != null)
+                {
+                    listener.enabled = _audioEnabled;
+                }
             }
         }
 
@@ -108,7 +158,8 @@ namespace Assets.Scripts.Camera
             while (_cameraStack.Count > 0)
             {
                 var stackCamera = _cameraStack.Pop();
-                Object.Destroy(stackCamera.gameObject);
+                if (stackCamera != null)
+                    Object.Destroy(stackCamera.gameObject);
             }
 
             _instance = null;
