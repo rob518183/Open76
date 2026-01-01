@@ -76,17 +76,41 @@ namespace Assets.Scripts
 
                 // Find Spawn Point safely
                 GameObject spawnPoint = GameObject.FindGameObjectWithTag("Spawn");
+				Vector3 finalPosition = Vector3.zero;
+                Quaternion finalRotation = Quaternion.identity;
                 
                 if (spawnPoint != null)
                 {
-                    importedVcf.transform.position = spawnPoint.transform.position;
-                    importedVcf.transform.rotation = spawnPoint.transform.rotation;
+					finalPosition = spawnPoint.transform.position;
+                    finalRotation = spawnPoint.transform.rotation;
                 }
                 else
                 {
                     Debug.LogError("SceneRoot: No object with tag 'Spawn' found in scene! Player spawned at (0,0,0).");
+					finalPosition = new Vector3(0, 100, 0); // High default to avoid falling immediately
+                }
+				
+				// 2. FIX: Snap to Ground Logic
+                // We cast a ray from high up (Y=1000) straight down to find the terrain/floor.
+                RaycastHit hit;
+                // Ensure your Terrain GameObject is on the "Terrain" or "Default" layer!
+                int layerMask = LayerMask.GetMask("Terrain", "Default"); 
+                
+                if (Physics.Raycast(new Vector3(finalPosition.x, 1000f, finalPosition.z), Vector3.down, out hit, 2000f, layerMask))
+                {
+                    // Found ground! Move spawn point to hit point + 1.5 meters buffer
+                    finalPosition.y = hit.point.y + 1.5f;
+                }
+                else
+                {
+                    // Fallback: If raycast misses (e.g. terrain hole), just assume safe height
+                    finalPosition.y = Mathf.Max(finalPosition.y, 50f);
                 }
 
+                // 3. Apply Position
+                importedVcf.transform.position = finalPosition;
+                importedVcf.transform.rotation = finalRotation;
+				
                 // Attach Camera
                 if (CameraManager.Instance != null && CameraManager.Instance.MainCamera != null)
                 {
@@ -94,6 +118,10 @@ namespace Assets.Scripts
                     if (smoothFollow != null)
                     {
                         smoothFollow.Target = importedVcf.transform;
+						// Force camera to snap immediately so it doesn't "swoop" from 0,0,0
+                        // (Assuming SmoothFollow has a method/property for instant snap, or just disabling/enabling it)
+                        smoothFollow.transform.position = finalPosition + new Vector3(0, 5, -10);
+                        smoothFollow.transform.LookAt(finalPosition);
                     }
                 }
             }
