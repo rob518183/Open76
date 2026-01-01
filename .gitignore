@@ -8,7 +8,7 @@
 /[Oo]bj/
 /[Bb]uild/
 /[Bb]uilds/
-/[Ll]ogs/
+/Logs
 /[Uu]ser[Ss]ettings/
 *.log
 
@@ -97,3 +97,7 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+/Logs
+Logs/shadercompiler-UnityShaderCompiler.exe-0.log
+UserSettings/Layouts/default-6000.dwlt
+*.log
