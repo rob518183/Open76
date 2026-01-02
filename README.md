@@ -14,10 +14,8 @@ The simulation does not work yet. Driving around works as well as the various ca
 Some features of the above are not yet fully implemented or have problems - see Issues.
 
 ## How do I run it?
-1. Open Level.scene in Unity.
-2. Find the gameobject called "Game" and set the "Game path" property to your Interstate '76 install directory.
-
-~~For now, Open76 requires the uncompressed ZFS of version 1.0 as delivered on the original CD. It cannot parse the compressed ZFS present in later versions.~~ 
+1. Open Level.unity in Unity.
+2. Find the game object called "Game" and set the "Game path" property to your Interstate '76 install directory.
 
 Open76 can now parse both the original uncompressed version and the compressed version of the ZFS. Nitro pack seems to have a different mission file format, this needs to be investigated.
 
