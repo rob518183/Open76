@@ -1,6 +1,8 @@
 ﻿using Assets.Scripts.Camera;
 using Assets.Scripts.Entities;
 using UnityEngine;
+// 1. Add the New Input System Namespace
+using UnityEngine.InputSystem; 
 
 namespace Assets.Scripts.CarSystems
 {
@@ -17,108 +19,103 @@ namespace Assets.Scripts.CarSystems
 
         private void Update()
         {
-            if (!CameraManager.Instance.IsMainCameraActive || !_car.Alive)
+            // Safety Checks
+            if (CameraManager.Instance == null || !CameraManager.Instance.IsMainCameraActive || !_car.Alive)
             {
                 return;
             }
             
-            // Kill player.
-            if (Input.GetKeyDown(KeyCode.K))
+            // 2. Poll Input Devices safely
+            var kb = Keyboard.current;
+            var gp = Gamepad.current;
+
+            // If no keyboard connected (e.g. console/mobile), skip keyboard blocks to avoid null errors
+            if (kb != null)
             {
-                _car.Kill();
+                // --- System Commands ---
+                if (kb.kKey.wasPressedThisFrame) _car.Kill();
+                if (kb.zKey.wasPressedThisFrame) Car.FireWeapons = !Car.FireWeapons;
+                if (kb.sKey.wasPressedThisFrame) _car.ToggleEngine();
+
+                // --- Radar Controls ---
+                if (kb.eKey.wasPressedThisFrame) _car.RadarPanel.CycleTarget();
+                if (kb.rKey.wasPressedThisFrame) _car.RadarPanel.ToggleRange();
+                if (kb.tKey.wasPressedThisFrame) _car.RadarPanel.TargetNearest();
+                if (kb.yKey.wasPressedThisFrame) _car.RadarPanel.ClearTarget();
+
+                // --- Weapon Cycling ---
+                if (kb.enterKey.wasPressedThisFrame) _car.WeaponsController.CycleWeapon();
             }
 
-            // Debug: Toggle all AI cars to fire.
-            if (Input.GetKeyDown(KeyCode.Z))
+            // --- Firing Logic (Keyboard) ---
+            bool isFiringAnything = false;
+
+            if (kb != null)
             {
-                Car.FireWeapons = !Car.FireWeapons;
+                if (kb.spaceKey.isPressed) 
+                {
+                    _car.WeaponsController.Fire(-1);
+                    isFiringAnything = true;
+                }
+                else if (kb.digit1Key.isPressed) { _car.WeaponsController.Fire(0); isFiringAnything = true; }
+                else if (kb.digit2Key.isPressed) { _car.WeaponsController.Fire(1); isFiringAnything = true; }
+                else if (kb.digit3Key.isPressed) { _car.WeaponsController.Fire(2); isFiringAnything = true; }
+                else if (kb.digit4Key.isPressed) { _car.WeaponsController.Fire(3); isFiringAnything = true; }
+                else if (kb.digit5Key.isPressed) { _car.WeaponsController.Fire(4); isFiringAnything = true; }
+                else if (kb.digit6Key.isPressed) { _car.SpecialsController.Fire(0); isFiringAnything = true; }
+
+                if (kb.digit7Key.isPressed) _car.SpecialsController.Fire(1);
+                if (kb.digit8Key.isPressed) _car.SpecialsController.Fire(2);
             }
 
-            // Cycle radar target.
-            if (Input.GetKeyDown(KeyCode.E))
+            // Gamepad Firing (Right Trigger)
+            if (gp != null && gp.rightTrigger.isPressed)
             {
-                _car.RadarPanel.CycleTarget();
+                 _car.WeaponsController.Fire(-1);
+                 isFiringAnything = true;
             }
 
-            // Toggle radar range.
-            if (Input.GetKeyDown(KeyCode.R))
-            {
-                _car.RadarPanel.ToggleRange();
-            }
-
-            // Target nearest enemy.
-            if (Input.GetKeyDown(KeyCode.T))
-            {
-                _car.RadarPanel.TargetNearest();
-            }
-
-            // Clear radar target.
-            if (Input.GetKeyDown(KeyCode.Y))
-            {
-                _car.RadarPanel.ClearTarget();
-            }
-
-            // Cycle weapon.
-            if (Input.GetKeyDown(KeyCode.Return))
-            {
-                _car.WeaponsController.CycleWeapon();
-            }
-
-            // Fire active weapon(s).
-            if (Input.GetKey(KeyCode.Space))
-            {
-                _car.WeaponsController.Fire(-1);
-            }
-            else if (Input.GetKey(KeyCode.Alpha1)) // Fire weapon 1.
-            {
-                _car.WeaponsController.Fire(0);
-            }
-            else if (Input.GetKey(KeyCode.Alpha2)) // Fire weapon 2.
-            {
-                _car.WeaponsController.Fire(1);
-            }
-            else if (Input.GetKey(KeyCode.Alpha3)) // Fire weapon 3.
-            {
-                _car.WeaponsController.Fire(2);
-            }
-            else if (Input.GetKey(KeyCode.Alpha4)) // Fire weapon 4.
-            {
-                _car.WeaponsController.Fire(3);
-            }
-            else if (Input.GetKey(KeyCode.Alpha5)) // Fire weapon 5.
-            {
-                _car.WeaponsController.Fire(4);
-            }
-            else if (Input.GetKey(KeyCode.Alpha6)) // Fire special 1.
-            {
-                _car.SpecialsController.Fire(0);
-            }
-            else
+            if (!isFiringAnything)
             {
                 _car.WeaponsController.StopFiring();
             }
 
-            // Fire special 2.
-            if (Input.GetKey(KeyCode.Alpha7))
+            // --- Driving Physics ---
+            float throttleInput = 0f;
+            float steeringInput = 0f;
+            bool eBrakeInput = false;
+
+            // Keyboard Axis Calculation (Simulating GetAxis("Vertical"))
+            if (kb != null)
             {
-                _car.SpecialsController.Fire(1);
+                // Throttle (W / Up Arrow)
+                if (kb.wKey.isPressed || kb.upArrowKey.isPressed) throttleInput += 1f;
+                // Brake/Reverse (S / Down Arrow)
+                if (kb.sKey.isPressed || kb.downArrowKey.isPressed) throttleInput -= 1f;
+
+                // Steering (A / D / Arrows)
+                if (kb.dKey.isPressed || kb.rightArrowKey.isPressed) steeringInput += 1f;
+                if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) steeringInput -= 1f;
+
+                // E-Brake (Shift)
+                if (kb.leftShiftKey.isPressed) eBrakeInput = true;
             }
 
-            // Fire special 3.
-            if (Input.GetKey(KeyCode.Alpha8))
+            // Gamepad Axis Calculation
+            if (gp != null)
             {
-                _car.SpecialsController.Fire(2);
+                throttleInput += gp.leftStick.y.ReadValue();
+                steeringInput += gp.leftStick.x.ReadValue();
+                if (gp.buttonSouth.isPressed) eBrakeInput = true; // A/Cross button
             }
 
-            // Start / Stop engine.
-            if (Input.GetKeyDown(KeyCode.S))
-            {
-                _car.ToggleEngine();
-            }
+            // Clamp values
+            throttleInput = Mathf.Clamp(throttleInput, -1f, 1f);
+            steeringInput = Mathf.Clamp(steeringInput, -1f, 1f);
 
-            float throttle = Input.GetAxis("Vertical");
-            float brake = -Mathf.Min(0, throttle);
-            throttle = Mathf.Max(0, throttle);
+            // Physics Application
+            float throttle = Mathf.Max(0, throttleInput);
+            float brake = -Mathf.Min(0, throttleInput);
 
             if (!_car.EngineRunning)
             {
@@ -127,14 +124,8 @@ namespace Assets.Scripts.CarSystems
 
             _carPhysics.Throttle = throttle;
             _carPhysics.Brake = brake;
-
-            float steering = Input.GetAxis("Horizontal");
-            _carPhysics.Steer = steering;
-
-            _carPhysics.EBrake = Input.GetButton("E-brake");
-            // _car.RearSlip = ebrake;
-
+            _carPhysics.Steer = steeringInput;
+            _carPhysics.EBrake = eBrakeInput;
         }
     }
-
 }

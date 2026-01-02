@@ -3,6 +3,8 @@ using Assets.Scripts.CarSystems;
 using Assets.Scripts.Entities;
 using UnityEngine;
 using UnityEngine.XR;
+// 1. Add New Input System Namespace
+using UnityEngine.InputSystem; 
 
 namespace Assets.Scripts.Camera
 {
@@ -12,7 +14,7 @@ namespace Assets.Scripts.Camera
         private SmoothFollow _smoothFollow;
         private Car _player;
         
-        // Cached references to avoid calling .Find() every frame/click
+        // Cached references
         private Transform _thirdPersonChassis;
         private Transform _firstPersonChassis;
         private RaySusp[] _suspensions;
@@ -35,23 +37,20 @@ namespace Assets.Scripts.Camera
 
         private void Update()
         {
-            // Dependency Check
             if (CameraManager.Instance != null && !CameraManager.Instance.IsMainCameraActive)
             {
                 return;
             }
 
-            // 1. Player Initialization
             if (_player == null)
             {
                 AttemptFindPlayer();
                 return; 
             }
 
-            // 2. Health Check
             if (!_player.Alive)
             {
-                if (FirstPerson) // Only switch if we haven't already
+                if (FirstPerson)
                 {
                     SetCameraThirdPerson();
                     FirstPerson = false;
@@ -59,11 +58,9 @@ namespace Assets.Scripts.Camera
                 return;
             }
             
-            // 3. Input Handling
             HandleViewSwitching();
             HandleXRInput();
 
-            // 4. First Person Rotation
             if (FirstPerson)
             {
                 HandleFirstPersonRotation();
@@ -85,14 +82,10 @@ namespace Assets.Scripts.Camera
 
         private void InitializePlayerReferences()
         {
-            // Cache Chassis parts
             _thirdPersonChassis = _player.transform.Find("Chassis/ThirdPerson");
             _firstPersonChassis = _player.transform.Find("Chassis/FirstPerson");
-
-            // Cache Suspensions
             _suspensions = _player.GetComponentsInChildren<RaySusp>();
 
-            // Cache VLOC points (Virtual Location of Camera)
             _vlocPoints.Clear();
             foreach (Transform child in _player.transform)
             {
@@ -101,34 +94,38 @@ namespace Assets.Scripts.Camera
                     _vlocPoints.Add(child);
                 }
             }
-
             _referencesInitialized = true;
         }
 
         private void HandleViewSwitching()
         {
-            if (Input.GetKeyDown(KeyCode.F1))
+            // 2. Poll Keyboard safely
+            var kb = Keyboard.current;
+            if (kb == null) return;
+
+            // F1 - F3: Main Views
+            if (kb.f1Key.wasPressedThisFrame)
             {
                 SetCameraFirstPersonAtVLOCIndex(0);
                 SetVisibleChassisModel(ChassisView.FirstPerson);
                 FirstPerson = true;
             }
-            else if (Input.GetKeyDown(KeyCode.F2))
+            else if (kb.f2Key.wasPressedThisFrame)
             {
                 SetCameraThirdPerson();
                 FirstPerson = false;
             }
-            else if (Input.GetKeyDown(KeyCode.F3))
+            else if (kb.f3Key.wasPressedThisFrame)
             {
                 SetCameraFirstPersonAtVLOCIndex(1);
                 SetVisibleChassisModel(ChassisView.AllHidden);
                 FirstPerson = false;
             }
-            // Wheel Cameras (F4 - F7)
-            else if (Input.GetKeyDown(KeyCode.F4)) SwitchToWheel(0);
-            else if (Input.GetKeyDown(KeyCode.F5)) SwitchToWheel(1);
-            else if (Input.GetKeyDown(KeyCode.F6)) SwitchToWheel(2);
-            else if (Input.GetKeyDown(KeyCode.F7)) SwitchToWheel(3);
+            // F4 - F7: Wheel Views
+            else if (kb.f4Key.wasPressedThisFrame) SwitchToWheel(0);
+            else if (kb.f5Key.wasPressedThisFrame) SwitchToWheel(1);
+            else if (kb.f6Key.wasPressedThisFrame) SwitchToWheel(2);
+            else if (kb.f7Key.wasPressedThisFrame) SwitchToWheel(3);
         }
 
         private void SwitchToWheel(int index)
@@ -140,9 +137,9 @@ namespace Assets.Scripts.Camera
 
         private void HandleXRInput()
         {
-            if (Input.GetKeyDown(KeyCode.R))
+            // Reset VR position
+            if (Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame)
             {
-                // MODERN XR RECENTERING
                 var subsystems = new List<XRInputSubsystem>();
                 SubsystemManager.GetSubsystems(subsystems);
                 if (subsystems.Count > 0)
@@ -154,15 +151,17 @@ namespace Assets.Scripts.Camera
 
         private void HandleFirstPersonRotation()
         {
+            var kb = Keyboard.current;
+            if (kb == null) return;
+
             Quaternion targetRotation = Quaternion.Euler(-14, 0, 0);
 
-            // Using 'else if' ensures specific priority. 
-            // Keypad 8 (Look Up/Mirror) overrides others in this logic.
-            if (Input.GetKey(KeyCode.Keypad6))      targetRotation = Quaternion.Euler(-14, 90, 0);  // Right
-            else if (Input.GetKey(KeyCode.Keypad2)) targetRotation = Quaternion.Euler(-14, 180, 0); // Back
-            else if (Input.GetKey(KeyCode.Keypad4)) targetRotation = Quaternion.Euler(-14, -90, 0); // Left
+            // Numpad Look logic using 'isPressed'
+            if (kb.numpad6Key.isPressed)      targetRotation = Quaternion.Euler(-14, 90, 0);  // Right
+            else if (kb.numpad2Key.isPressed) targetRotation = Quaternion.Euler(-14, 180, 0); // Back
+            else if (kb.numpad4Key.isPressed) targetRotation = Quaternion.Euler(-14, -90, 0); // Left
             
-            if (Input.GetKey(KeyCode.Keypad8))      targetRotation = Quaternion.Euler(7, 0, 0);     // Up
+            if (kb.numpad8Key.isPressed)      targetRotation = Quaternion.Euler(7, 0, 0);     // Up
 
             transform.localRotation = Quaternion.Slerp(transform.localRotation, targetRotation, Time.deltaTime * 6);
         }

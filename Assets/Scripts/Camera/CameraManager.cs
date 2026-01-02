@@ -71,21 +71,34 @@ namespace Assets.Scripts.Camera
             }
         }
 
-        private CameraManager()
+private CameraManager()
         {
             _cameraStack = new Stack<FSMCamera>();
-            
-            // Find the initial FSMCamera in the scene
-			var mainCamera = Object.FindFirstObjectByType<FSMCamera>();
-            
-            if (mainCamera != null)
+            _audioEnabled = true;
+
+            // 1. Try to find an existing FSMCamera
+            var targetCamera = Object.FindFirstObjectByType<FSMCamera>();
+
+            // 2. If missing, find the standard Unity Camera and auto-add the script
+            if (targetCamera == null)
             {
-                _mainCameraObject = mainCamera.gameObject;
-                _cameraStack.Push(mainCamera);
+                var vanillaCamera = Object.FindFirstObjectByType<UnityEngine.Camera>();
+                if (vanillaCamera != null)
+                {
+                    Debug.Log("CameraManager: FSMCamera component missing. Auto-adding it to " + vanillaCamera.name);
+                    targetCamera = vanillaCamera.gameObject.AddComponent<FSMCamera>();
+                }
+            }
+
+            // 3. Initialize Stack
+            if (targetCamera != null)
+            {
+                _mainCameraObject = targetCamera.gameObject;
+                _cameraStack.Push(targetCamera);
             }
             else
             {
-                Debug.LogWarning("CameraManager: No FSMCamera found in scene on initialization.");
+                Debug.LogError("CameraManager: CRITICAL - No Camera found in scene at all!");
             }
 
             _audioEnabled = true;

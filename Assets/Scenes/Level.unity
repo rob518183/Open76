@@ -130,7 +130,7 @@ GameObject:
   m_Component:
   - component: {fileID: 802766081}
   - component: {fileID: 802766080}
-  - component: {fileID: 802766079}
+  - component: {fileID: 802766082}
   m_Layer: 0
   m_Name: MusicPlayer
   m_TagString: Untagged
@@ -138,18 +138,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &802766079
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 802766078}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!82 &802766080
 AudioSource:
   m_ObjectHideFlags: 0
@@ -262,6 +250,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &802766082
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 802766078}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 23c83d9bcf84aba46822289615518f97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.MusicPlayer
+  MinTrackIndex: 2
+  MaxTrackIndex: 18
+  PlayOnStart: 1
 --- !u!1 &831432015
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Assets.Scripts.Camera;
@@ -92,7 +93,7 @@ namespace Assets.Scripts.Entities
             _visualDamageParts = new Dictionary<int, List<Transform>>();
         }
 
-        private void Start()
+		private void Start()
         {
             EntityManager.Instance.RegisterCar(this);
             UpdateEngineSounds();
@@ -100,6 +101,41 @@ namespace Assets.Scripts.Entities
             Transform firstPersonTransform = _transform.Find("Chassis/FirstPerson");
             WeaponsController = new WeaponsController(this, Vcf, firstPersonTransform);
             SpecialsController = new SpecialsController(Vcf, firstPersonTransform);
+
+            // FIX: Start the stabilization routine
+            StartCoroutine(StabilizeSpawnPhysics());
+        }
+
+        private IEnumerator StabilizeSpawnPhysics()
+        {
+            // 1. Lock the car in place so gravity doesn't pull it through the floor
+            if (_rigidBody != null)
+            {
+                _rigidBody.isKinematic = true;
+            }
+
+            // 2. Wait for 2 physics frames. 
+            // This gives the TerrainCollider time to generate and register with the physics engine.
+            yield return new WaitForFixedUpdate();
+            yield return new WaitForFixedUpdate();
+
+            // 3. Optional: Snap to ground one last time if we have a valid Raycast
+            // (Only do this if you aren't spawning in mid-air on purpose)
+            RaycastHit hit;
+            if (Physics.Raycast(transform.position + Vector3.up * 5f, Vector3.down, out hit, 10f, LayerMask.GetMask("Terrain", "Default")))
+            {
+                transform.position = hit.point + Vector3.up * 0.5f; // Slight buffer
+            }
+
+            // 4. Release the car
+            if (_rigidBody != null)
+            {
+                _rigidBody.isKinematic = false;
+                
+                // Reset any accumulated velocity from the spawn frame
+                _rigidBody.linearVelocity = Vector3.zero; // Note: Use .velocity in older Unity versions
+                _rigidBody.angularVelocity = Vector3.zero;
+            }
         }
 
         public void Configure(Vdf vdf, Vcf vcf)

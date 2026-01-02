@@ -54,8 +54,6 @@ namespace Assets.Scripts
                 InitializePlayer();
             }
 
-            // 5. Start Music
-            PlayLevelMusic();
         }
 
         private void InitializePlayer()
@@ -131,25 +129,5 @@ namespace Assets.Scripts
             }
         }
 
-        private void PlayLevelMusic()
-        {
-            var musicAudioSource = GetComponent<AudioSource>();
-            if (VirtualFilesystem.Instance != null)
-            {
-                // Clamped random range to prevent errors if indices are invalid
-                int trackIndex = Random.Range(MusicMinIndex, MusicMaxIndex);
-                var clip = VirtualFilesystem.Instance.GetMusicClip(trackIndex);
-                
-                if (clip != null)
-                {
-                    musicAudioSource.clip = clip;
-                    musicAudioSource.Play();
-                }
-                else
-                {
-                    Debug.LogWarning($"SceneRoot: Music clip at index {trackIndex} not found.");
-                }
-            }
-        }
     }
 }
