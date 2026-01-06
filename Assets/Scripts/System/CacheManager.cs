@@ -115,21 +115,23 @@ namespace Assets.Scripts.System
 
         public Texture2D GetTexture(string textureName)
         {
-            string filename = Path.GetFileNameWithoutExtension(textureName);
-            Texture2D texture = null;
+            if (string.IsNullOrEmpty(textureName)) return Texture2D.whiteTexture;
+
+            string filename = global::System.IO.Path.GetFileNameWithoutExtension(textureName);            
+            // 1. Try VQM
             if (VirtualFilesystem.Instance.FileExists(filename + ".vqm"))
             {
-                texture = TextureParser.ReadVqmTexture(filename + ".vqm", Palette);
+                return TextureParser.ReadVqmTexture(filename + ".vqm", Palette);
             }
+            // 2. Try MAP
             else if (VirtualFilesystem.Instance.FileExists(filename + ".map"))
             {
-                texture = TextureParser.ReadMapTexture(filename + ".map", Palette);
+                return TextureParser.ReadMapTexture(filename + ".map", Palette);
             }
-            else
-            {
-                Debug.LogWarning("Texture not found: " + textureName);
-            }
-            return texture;
+
+            // 3. Fallback: Return a white square so we can see the mesh!
+            Debug.LogWarning($"[CacheManager] Missing texture '{textureName}'. Using white fallback.");
+            return Texture2D.whiteTexture;
         }
 
         public Material GetTextureMaterial(string textureName, bool transparent)

@@ -634,6 +634,7 @@ GameObject:
   - component: {fileID: 1211648313}
   - component: {fileID: 1211648319}
   - component: {fileID: 1211648318}
+  - component: {fileID: 1211648320}
   m_Layer: 0
   m_Name: Camera
   m_TagString: MainCamera
@@ -752,6 +753,18 @@ MonoBehaviour:
   Height: 4
   HeightDamping: 10
   RotationDamping: 3
+--- !u!114 &1211648320
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1211648312}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbca5db164730964593c7a40ea8de689, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FSMCamera
 --- !u!1 &1285842486
 GameObject:
   m_ObjectHideFlags: 0

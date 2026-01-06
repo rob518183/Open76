@@ -92,7 +92,6 @@ namespace Assets.Scripts.System
                     terrain.terrainData = mdef.TerrainPatches[x, z].TerrainData;
                     terrain.terrainData.terrainLayers = terrainLayers;
                     terrain.materialTemplate = _terrainMaterial;
-                    terrain.materialType = Terrain.MaterialType.Custom;
 
                     TerrainCollider terrainCollider = patchGameObject.AddComponent<TerrainCollider>();
                     terrainCollider.terrainData = terrain.terrainData;
@@ -223,7 +222,12 @@ namespace Assets.Scripts.System
 
             worldGameObject.transform.position = new Vector3(-mdef.Middle.x * 640, 0, -mdef.Middle.y * 640);
             
-            Object.FindObjectOfType<Light>().color = _cacheManager.Palette[176];
+            var mainLight = Object.FindFirstObjectByType<Light>();
+            if (mainLight != null)
+            {
+                mainLight.color = _cacheManager.Palette[176];
+            }
+            
             UnityEngine.Camera.main.backgroundColor = _cacheManager.Palette[239];
             RenderSettings.fogColor = _cacheManager.Palette[239];
             RenderSettings.ambientLight = _cacheManager.Palette[247];
