@@ -1146,7 +1146,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   GamePath: C:\Program Files (x86)\GOG Galaxy\Games\Interstate 76
-  MissionFile: m01.msn
+  MissionFile: m03.msn
   VcfToLoad: vppirna1.vcf
   MusicMinIndex: 2
   MusicMaxIndex: 18

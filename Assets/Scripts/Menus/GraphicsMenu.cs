@@ -3,6 +3,8 @@ using System.Collections;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.XR;
+using UnityEngine.XR.Management;
+using System.Collections.Generic;
 
 namespace Assets.Scripts.Menus
 {
@@ -42,7 +44,7 @@ namespace Assets.Scripts.Menus
 
         private string GetVRStatus()
         {
-            return XRSettings.enabled ? "On" : "Off";
+            return IsVREnabled() ? "On" : "Off";
         }
 
         private string GetCurrentResolutionString()
@@ -106,8 +108,94 @@ namespace Assets.Scripts.Menus
 
         private void ToggleVR()
         {
-            XRSettings.enabled = !XRSettings.enabled;
+            bool enable = !IsVREnabled();
+            SetVREnabled(enable);
             _menuController.Redraw();
+        }
+
+        private bool IsVREnabled()
+        {
+            try
+            {
+                var displays = new List<XRDisplaySubsystem>();
+                UnityEngine.SubsystemManager.GetSubsystems(displays);
+                return displays.Exists(d => d != null && d.running);
+            }
+            catch
+            {
+                // Fallback to legacy API if subsystems or XR Management aren't available
+                return XRSettings.enabled;
+            }
+        }
+
+        private void SetVREnabled(bool enabled)
+        {
+            try
+            {
+                var mgr = XRGeneralSettings.Instance?.Manager;
+                if (mgr == null)
+                {
+                    XRSettings.enabled = enabled; // fallback
+                    return;
+                }
+
+                if (enabled)
+                {
+                    if (mgr.activeLoader == null)
+                    {
+                        // Initialize loader (async) then start subsystems via coroutine runner
+                        _menuController.StartCoroutine(InitializeLoaderAndStart(mgr));
+                    }
+                    else
+                    {
+                        mgr.StartSubsystems();
+                    }
+                }
+                else
+                {
+                    mgr.StopSubsystems();
+                    mgr.DeinitializeLoader();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("SetVREnabled failed, falling back to XRSettings: " + ex.Message);
+                XRSettings.enabled = enabled;
+            }
+        }
+
+        private IEnumerator InitializeLoaderAndStart(XRManagerSettings mgr)
+        {
+            if (mgr == null) yield break;
+
+            // InitializeLoader is implemented as a coroutine in XR Management; yield it if present
+            IEnumerator init = null;
+            try { init = mgr.InitializeLoader(); } catch { init = null; }
+
+            if (init != null)
+            {
+                yield return init;
+            }
+            else
+            {
+                // Fallback: wait for activeLoader to be set with a timeout
+                float timeout = 5f;
+                float t = 0f;
+                while (mgr.activeLoader == null && t < timeout)
+                {
+                    t += Time.deltaTime;
+                    yield return null;
+                }
+            }
+
+            if (mgr.activeLoader != null)
+            {
+                mgr.StartSubsystems();
+            }
+            else
+            {
+                Debug.LogWarning("XR loader failed to initialize within timeout.");
+            }
         }
 
         public void Back()
