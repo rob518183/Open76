@@ -17,6 +17,8 @@ Some features of the above are not yet fully implemented or have problems - see 
 1. Open Level.unity in Unity.
 2. Find the game object called "Game" and set the "Game path" property to your Interstate '76 install directory.
 
+You can select individual levels to load in Unity.
+
 Open76 can now parse both the original uncompressed version and the compressed version of the ZFS. Nitro pack seems to have a different mission file format, this needs to be investigated.
 
 ## How do I contribute?
@@ -39,6 +41,11 @@ Without "That Tony"'s wonderful blog (http://hackingonspace.blogspot.se) and rev
 ![Screenshot 5](Screenshots/sc5.png)
 ![Screenshot 6](Screenshots/sc6.png)
 ![Screenshot 7](Screenshots/sc7.png)
+
+## todo
+add main menu 
+add ai for enemy vehicles
+add voice over 
 
 ## License
 Licensed under the GPL version 3.
