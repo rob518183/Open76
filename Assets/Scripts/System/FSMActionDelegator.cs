@@ -1,6 +1,7 @@
 ﻿using Assets.Scripts.Camera;
 using Assets.Scripts.Entities;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace Assets.Scripts.System
 {
@@ -77,7 +78,7 @@ namespace Assets.Scripts.System
                     float secondsElapsed = Time.unscaledTime - fsmRunner.Timers[timerNo.Value];
                     return secondsElapsed >= seconds.Value ? 1 : 0;
                 case "isKeypress":
-                    return Input.GetKeyDown(KeyCode.Space) ? 1 : 0;
+                    return Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame ? 1 : 0;
                 case "camObjDir":
                     {
                         if (CameraManager.Instance.IsMainCameraActive)

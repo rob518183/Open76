@@ -22,6 +22,7 @@ namespace Assets.Scripts.System.Fileparsers
         public SdfPart[] SideParts { get; set; }
         public SdfPart[] InsideParts { get; set; }
         public SdfPart[] TurretParts { get; set; }
+        public SdfPart[] ObjectOffsets { get; set; }
         public SdfPart Projectile { get; set; }
     }
     
@@ -82,6 +83,7 @@ namespace Assets.Scripts.System.Fileparsers
                     part.Position = new Vector3(br.ReadSingle(), br.ReadSingle(), br.ReadSingle());
                     parts[i] = part;
                 }
+                gdf.ObjectOffsets = parts;
                 
                 br.FindNext("GGEO"); // 4 bytes
                 {

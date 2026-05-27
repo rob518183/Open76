@@ -52,6 +52,7 @@ namespace Assets.Scripts.System.Fileparsers
         public Gdf Gdf { get; set; }
         public bool RearFacing { get; set; }
         public Transform Transform { get; set; }
+        public HardpointMeshType MeshType { get; set; }
     }
 
     public class VcfParser

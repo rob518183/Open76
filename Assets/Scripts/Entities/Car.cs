@@ -306,9 +306,16 @@ namespace Assets.Scripts.Entities
 
         public override void ApplyDamage(DamageType damageType, Vector3 normal, int damageAmount)
         {
-            // Determine quadrant based on angle
-            float angle = Quaternion.FromToRotation(Vector3.up, normal).eulerAngles.z;
-            SystemType targetSystem = GetSystemFromAngle(angle, damageType);
+            SystemType targetSystem;
+            if (damageType == DamageType.Projectile)
+            {
+                targetSystem = SystemType.Vehicle;
+            }
+            else
+            {
+                float angle = Quaternion.FromToRotation(Vector3.up, normal).eulerAngles.z;
+                targetSystem = GetSystemFromAngle(angle, damageType);
+            }
 
             int currentHealth = GetComponentHealth(targetSystem);
             SetComponentHealth(targetSystem, currentHealth - damageAmount);
@@ -512,7 +519,19 @@ namespace Assets.Scripts.Entities
 
         public void SetSpeed(int targetSpeed)
         {
-            _rigidBody.linearVelocity = _transform.forward * targetSpeed;
+            Vector3 targetVelocity = _transform.forward * targetSpeed;
+            if (_rigidBody == null)
+            {
+                return;
+            }
+
+            if (_rigidBody.isKinematic)
+            {
+                _rigidBody.MovePosition(_rigidBody.position + targetVelocity * Time.fixedDeltaTime);
+                return;
+            }
+
+            _rigidBody.linearVelocity = targetVelocity;
         }
 
         public bool AtFollowTarget() => AI != null && AI.AtFollowTarget();
@@ -563,8 +582,17 @@ namespace Assets.Scripts.Entities
             source = CacheManager.Instance.GetAudioSource(gameObject, name);
             if (source != null)
             {
-                source.volume = 0.6f;
                 source.loop = loop;
+                AudioCategorySource audioCategory = source.GetComponent<AudioCategorySource>();
+                if (audioCategory != null)
+                {
+                    audioCategory.SetBaseVolume(0.6f);
+                }
+                else
+                {
+                    source.volume = 0.6f;
+                }
+
                 if (loop && EngineRunning) source.Play();
             }
         }

@@ -29,6 +29,10 @@ namespace Assets.Scripts.CarSystems
             _weapons = new Weapon[weaponCount];
             _weaponAudio = car.gameObject.AddComponent<AudioSource>();
             _weaponAudio.volume = 0.5f;
+            AudioCategorySource weaponAudioCategory = _weaponAudio.gameObject.GetComponent<AudioCategorySource>() ?? _weaponAudio.gameObject.AddComponent<AudioCategorySource>();
+            weaponAudioCategory.Category = AudioCategory.Sfx;
+            weaponAudioCategory.BaseVolume = 0.5f;
+            weaponAudioCategory.UpdateVolume();
             _weaponEmptySound = CacheManager.Instance.GetAudioClip("cammo.gpw");
             _weaponBrokenSound = CacheManager.Instance.GetAudioClip("cwstat.gpw");
             _firingWeapons = new List<Weapon>(5);
@@ -178,7 +182,10 @@ namespace Assets.Scripts.CarSystems
 
         private void FireWeapon(Weapon weapon)
         {
-            GameObject projObj = UnityEngine.Object.Instantiate(weapon.ProjectilePrefab, weapon.Transform.position, weapon.Transform.rotation);
+            GetProjectileSpawn(weapon, out Vector3 position, out Quaternion rotation, out Vector3 scale);
+            GameObject projObj = UnityEngine.Object.Instantiate(weapon.ProjectilePrefab, position, rotation);
+            projObj.transform.localScale = Vector3.Scale(projObj.transform.localScale, scale);
+
             Projectile projectile = projObj.GetComponent<Projectile>();
             projectile.Velocity = weapon.Gdf.BulletVelocity;
             projectile.Damage = weapon.Gdf.Damage;
@@ -192,6 +199,57 @@ namespace Assets.Scripts.CarSystems
             if (_panel != null)
             {
                 _panel.SetWeaponAmmoCount(weapon.Index, weapon.Ammo);
+            }
+        }
+
+        private void GetProjectileSpawn(Weapon weapon, out Vector3 position, out Quaternion rotation, out Vector3 scale)
+        {
+            position = weapon.Transform.position;
+            rotation = weapon.Transform.rotation;
+            scale = Vector3.one;
+
+            if (weapon.Gdf.ObjectOffsets != null && weapon.Gdf.ObjectOffsets.Length > 0)
+            {
+                SdfPart worldOffset = GetProjectileOffset(weapon);
+                if (worldOffset != null)
+                {
+                    position += weapon.Transform.rotation * worldOffset.Position;
+                    rotation *= Quaternion.LookRotation(worldOffset.Forward.normalized, worldOffset.Up.normalized);
+                    scale = new Vector3(worldOffset.Right.magnitude, worldOffset.Up.magnitude, worldOffset.Forward.magnitude);
+                }
+            }
+
+            if (weapon.Gdf.Projectile != null)
+            {
+                position += rotation * weapon.Gdf.Projectile.Position;
+                rotation *= Quaternion.LookRotation(weapon.Gdf.Projectile.Forward.normalized, weapon.Gdf.Projectile.Up.normalized);
+                Vector3 projectileScale = new Vector3(
+                    weapon.Gdf.Projectile.Right.magnitude,
+                    weapon.Gdf.Projectile.Up.magnitude,
+                    weapon.Gdf.Projectile.Forward.magnitude);
+                scale = Vector3.Scale(scale, projectileScale);
+            }
+        }
+
+        private SdfPart GetProjectileOffset(Weapon weapon)
+        {
+            if (weapon.Gdf.ObjectOffsets == null)
+            {
+                return null;
+            }
+
+            switch (weapon.MeshType)
+            {
+                case HardpointMeshType.Top:
+                    return weapon.Gdf.ObjectOffsets.Length > 0 ? weapon.Gdf.ObjectOffsets[0] : null;
+                case HardpointMeshType.Side:
+                    return weapon.Gdf.ObjectOffsets.Length > 1 ? weapon.Gdf.ObjectOffsets[1] : null;
+                case HardpointMeshType.Turret:
+                    return weapon.Gdf.ObjectOffsets.Length > 2 ? weapon.Gdf.ObjectOffsets[2] : null;
+                case HardpointMeshType.Inside:
+                    return weapon.Gdf.ObjectOffsets.Length > 3 ? weapon.Gdf.ObjectOffsets[3] : null;
+                default:
+                    return weapon.Gdf.ObjectOffsets.Length > 0 ? weapon.Gdf.ObjectOffsets[0] : null;
             }
         }
 

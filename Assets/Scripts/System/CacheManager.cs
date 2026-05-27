@@ -93,9 +93,13 @@ namespace Assets.Scripts.System
             }
 
             AudioSource audioSource = rootObject.AddComponent<AudioSource>();
-            audioSource.volume = maxVolume;
+            audioSource.volume = maxVolume * AudioSettings.GetMultiplier(AudioCategory.Sfx);
             audioSource.playOnAwake = false;
             audioSource.clip = audioClip;
+
+            AudioCategorySource audioCategory = audioSource.gameObject.GetComponent<AudioCategorySource>() ?? audioSource.gameObject.AddComponent<AudioCategorySource>();
+            audioCategory.Category = AudioCategory.Sfx;
+            audioCategory.BaseVolume = maxVolume;
 
             if (audioClip.name.EndsWith(".wav"))
             {
@@ -470,6 +474,7 @@ namespace Assets.Scripts.System
                     weaponTransform.localRotation = Quaternion.identity;
                     ImportCarParts(partDict, weaponTransform.gameObject, vtf, partsArray, _noColliderPrefab, false);
                     weapon.Transform = weaponTransform;
+                    weapon.MeshType = hloc.MeshType;
 
                     // Disable depth test for 'inside' weapons, otherwise they are obscured.
                     if (hloc.MeshType == HardpointMeshType.Inside)

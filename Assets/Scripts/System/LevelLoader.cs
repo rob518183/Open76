@@ -194,35 +194,51 @@ namespace Assets.Scripts.System
 
             foreach (MsnMissionParser.Ldef ldef in mdef.StringObjects)
             {
-                GameObject sdfObj = _cacheManager.ImportSdf(ldef.Label + ".sdf", null, Vector3.zero, Quaternion.identity, false, out _, out _);
-
-                for (int i = 0; i < ldef.StringPositions.Length; i++)
+                GameObject sdfPrototype = _cacheManager.ImportSdf(ldef.Label + ".sdf", null, Vector3.zero, Quaternion.identity, false, out _, out _);
+                if (ldef.StringPositions.Length == 0)
                 {
-                    Vector3 pos = ldef.StringPositions[i];
+                    Object.Destroy(sdfPrototype);
+                    continue;
+                }
+
+                if (ldef.StringPositions.Length == 1)
+                {
+                    Vector3 pos = ldef.StringPositions[0];
                     Vector3 localPosition = new Vector3(pos.x % 640, pos.y, pos.z % 640);
                     int patchPosX = (int)(pos.x / 640.0f);
                     int patchPosZ = (int)(pos.z / 640.0f);
+                    sdfPrototype.name = ldef.Label + " 0";
+                    sdfPrototype.transform.parent = terrainPatches[patchPosX, patchPosZ].transform;
+                    sdfPrototype.transform.localPosition = localPosition;
+                    sdfPrototype.transform.localRotation = Quaternion.identity;
+                    continue;
+                }
+
+                for (int i = 0; i < ldef.StringPositions.Length - 1; i++)
+                {
+                    Vector3 start = ldef.StringPositions[i];
+                    Vector3 end = ldef.StringPositions[i + 1];
+                    Vector3 worldPosition = (start + end) * 0.5f;
+                    Vector3 localPosition = new Vector3(worldPosition.x % 640, worldPosition.y, worldPosition.z % 640);
+                    int patchPosX = (int)(worldPosition.x / 640.0f);
+                    int patchPosZ = (int)(worldPosition.z / 640.0f);
+                    Vector3 direction = end - start;
+                    direction.y = 0f;
+                    Quaternion rotation = direction.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(direction.normalized, Vector3.up) : Quaternion.identity;
+
+                    GameObject sdfObj = Object.Instantiate(sdfPrototype);
                     sdfObj.name = ldef.Label + " " + i;
                     sdfObj.transform.parent = terrainPatches[patchPosX, patchPosZ].transform;
                     sdfObj.transform.localPosition = localPosition;
-                    if (i < ldef.StringPositions.Length - 1)
-                    {
-                        sdfObj.transform.LookAt(ldef.StringPositions[i + 1], Vector3.up);
-                    }
-                    else
-                    {
-                        sdfObj.transform.LookAt(ldef.StringPositions[i - 1], Vector3.up);
-                        sdfObj.transform.localRotation *= Quaternion.AngleAxis(180, Vector3.up);
-                    }
-
-                    if (i < ldef.StringPositions.Length - 1)
-                        sdfObj = Object.Instantiate(sdfObj);
+                    sdfObj.transform.localRotation = rotation;
                 }
+
+                Object.Destroy(sdfPrototype);
             }
 
             worldGameObject.transform.position = new Vector3(-mdef.Middle.x * 640, 0, -mdef.Middle.y * 640);
             
-            var mainLight = Object.FindFirstObjectByType<Light>();
+            var mainLight = Object.FindAnyObjectByType<Light>();
             if (mainLight != null)
             {
                 mainLight.color = _cacheManager.Palette[176];

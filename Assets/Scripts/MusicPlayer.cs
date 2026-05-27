@@ -31,6 +31,13 @@ namespace Assets.Scripts
             // DontDestroyOnLoad(gameObject); 
 
             _audioSource = GetComponent<AudioSource>();
+            if (_audioSource != null)
+            {
+                AudioCategorySource audioCategory = _audioSource.gameObject.GetComponent<AudioCategorySource>() ?? _audioSource.gameObject.AddComponent<AudioCategorySource>();
+                audioCategory.Category = AudioCategory.Music;
+                audioCategory.BaseVolume = 1.0f;
+                audioCategory.UpdateVolume();
+            }
         }
 
         private void Start()

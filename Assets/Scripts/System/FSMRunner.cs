@@ -13,7 +13,7 @@ namespace Assets.Scripts.System
             {
                 if (_instance == null)
                 {
-                    _instance = FindObjectOfType<FSMRunner>();
+                    _instance = FindAnyObjectByType<FSMRunner>();
                 }
 
                 return _instance;

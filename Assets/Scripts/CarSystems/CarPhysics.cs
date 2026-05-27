@@ -83,6 +83,10 @@ namespace Assets.Scripts.CarSystems
             _landingAudioSource.spatialBlend = 1.0f;
             _landingAudioSource.maxDistance = 75f;
             _landingAudioSource.minDistance = 7.5f;
+            AudioCategorySource landingCategory = _landingAudioSource.gameObject.GetComponent<AudioCategorySource>() ?? _landingAudioSource.gameObject.AddComponent<AudioCategorySource>();
+            landingCategory.Category = AudioCategory.Sfx;
+            landingCategory.BaseVolume = 0.8f;
+            landingCategory.UpdateVolume();
             _landingAudioClip1 = _cacheManager.GetAudioClip("vland");
             _landingAudioClip2 = _cacheManager.GetAudioClip("vlanding");
 
@@ -144,14 +148,31 @@ namespace Assets.Scripts.CarSystems
                     
                     _surfaceAudioSource = _cacheManager.GetAudioSource(gameObject, surfaceSoundName);
                     _surfaceAudioSource.loop = true;
-                    _surfaceAudioSource.volume = 0.6f;
+                    AudioCategorySource surfaceCategory = _surfaceAudioSource.GetComponent<AudioCategorySource>();
+                    if (surfaceCategory != null)
+                    {
+                        surfaceCategory.SetBaseVolume(0.6f);
+                    }
+                    else
+                    {
+                        _surfaceAudioSource.volume = 0.6f;
+                    }
                     _surfaceAudioSource.Play();
                 }
             }
 
             if (_surfaceAudioSource != null)
             {
-                _surfaceAudioSource.volume = Mathf.Min(_rigidbody.linearVelocity.magnitude * 0.025f, 0.6f);
+                float surfaceVolume = Mathf.Min(_rigidbody.linearVelocity.magnitude * 0.025f, 0.6f);
+                AudioCategorySource surfaceCategory = _surfaceAudioSource.GetComponent<AudioCategorySource>();
+                if (surfaceCategory != null)
+                {
+                    surfaceCategory.SetBaseVolume(surfaceVolume);
+                }
+                else
+                {
+                    _surfaceAudioSource.volume = surfaceVolume;
+                }
                 if (!_surfaceAudioSource.isPlaying)
                 {
                     _surfaceAudioSource.Play();

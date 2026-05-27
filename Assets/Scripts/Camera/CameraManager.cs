@@ -77,12 +77,12 @@ private CameraManager()
             _audioEnabled = true;
 
             // 1. Try to find an existing FSMCamera
-            var targetCamera = Object.FindFirstObjectByType<FSMCamera>();
+            var targetCamera = Object.FindAnyObjectByType<FSMCamera>();
 
             // 2. If missing, find the standard Unity Camera and auto-add the script
             if (targetCamera == null)
             {
-                var vanillaCamera = Object.FindFirstObjectByType<UnityEngine.Camera>();
+                var vanillaCamera = Object.FindAnyObjectByType<UnityEngine.Camera>();
                 if (vanillaCamera != null)
                 {
                     Debug.Log("CameraManager: FSMCamera component missing. Auto-adding it to " + vanillaCamera.name);

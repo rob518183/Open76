@@ -135,7 +135,7 @@ namespace Assets.Scripts.Menus
                 var mgr = XRGeneralSettings.Instance?.Manager;
                 if (mgr == null)
                 {
-                    XRSettings.enabled = enabled; // fallback
+                    SetLegacyXREnabled(enabled);
                     return;
                 }
 
@@ -159,8 +159,36 @@ namespace Assets.Scripts.Menus
             }
             catch (Exception ex)
             {
-                Debug.LogWarning("SetVREnabled failed, falling back to XRSettings: " + ex.Message);
-                XRSettings.enabled = enabled;
+                Debug.LogWarning("SetVREnabled failed, falling back to XR display subsystem control: " + ex.Message);
+                SetLegacyXREnabled(enabled);
+            }
+        }
+
+        private void SetLegacyXREnabled(bool enabled)
+        {
+            try
+            {
+                var displays = new List<XRDisplaySubsystem>();
+                SubsystemManager.GetSubsystems(displays);
+
+                if (enabled)
+                {
+                    foreach (var display in displays)
+                    {
+                        display?.Start();
+                    }
+                }
+                else
+                {
+                    foreach (var display in displays)
+                    {
+                        display?.Stop();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("SetLegacyXREnabled failed: " + ex.Message);
             }
         }
 

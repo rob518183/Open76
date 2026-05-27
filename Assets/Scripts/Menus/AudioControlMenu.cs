@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Assets.Scripts.System;
+using System;
 
 namespace Assets.Scripts.Menus
 {
@@ -15,13 +16,13 @@ namespace Assets.Scripts.Menus
                 BackgroundFilename = "6audcon1",
                 MenuItems = new MenuItem[] {
                     new MenuBlank(),
-                    new MenuButton("Music Level", "3.00", Noop),
+                    new MenuButton("Music Level", AudioSettings.FormatDisplay(AudioSettings.MusicLevel), IncreaseMusicLevel),
                     new MenuBlank(),
                     new MenuBlank(),
-                    new MenuButton("SFX Level", "4.00", Noop),
+                    new MenuButton("SFX Level", AudioSettings.FormatDisplay(AudioSettings.SfxLevel), IncreaseSfxLevel),
                     new MenuBlank(),
                     new MenuBlank(),
-                    new MenuButton("Voice Level", "10.00", Noop),
+                    new MenuButton("Voice Level", AudioSettings.FormatDisplay(AudioSettings.VoiceLevel), IncreaseVoiceLevel),
                     new MenuBlank(),
                     new MenuBlank(),
                     new MenuButton("Back", "", Back)
@@ -29,11 +30,24 @@ namespace Assets.Scripts.Menus
             };
         }
 
-        private void Noop()
+        private void IncreaseMusicLevel()
         {
-            throw new NotImplementedException();
+            AudioSettings.SetMusicLevel(AudioSettings.NextLevel(AudioSettings.MusicLevel));
+            _menuController.Redraw();
         }
-        
+
+        private void IncreaseSfxLevel()
+        {
+            AudioSettings.SetSfxLevel(AudioSettings.NextLevel(AudioSettings.SfxLevel));
+            _menuController.Redraw();
+        }
+
+        private void IncreaseVoiceLevel()
+        {
+            AudioSettings.SetVoiceLevel(AudioSettings.NextLevel(AudioSettings.VoiceLevel));
+            _menuController.Redraw();
+        }
+
         public void Back()
         {
             _menuController.ShowMenu<OptionsMenu>();

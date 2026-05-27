@@ -23,7 +23,12 @@ namespace Assets.Scripts.System
             _radioSource.dopplerLevel = 0f;
             _radioSource.spatialize = false;
             _radioSource.priority = 0;
-            _radioSource.volume = 0.4f;
+            _radioSource.volume = 1.0f;
+
+            AudioCategorySource audioCategory = _radioSource.gameObject.GetComponent<AudioCategorySource>() ?? _radioSource.gameObject.AddComponent<AudioCategorySource>();
+            audioCategory.Category = AudioCategory.Voice;
+            audioCategory.BaseVolume = 1.0f;
+            audioCategory.UpdateVolume();
         }
 
         private static RadioManager _instance;

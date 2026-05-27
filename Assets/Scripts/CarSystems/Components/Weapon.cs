@@ -15,6 +15,7 @@ namespace Assets.Scripts.CarSystems.Components
         public int Ammo;
         public int Health; // TODO: Handle damage to the weapon.
         public int WeaponGroupOffset;
+        public HardpointMeshType MeshType;
         public bool Firing;
         public float LastFireTime;
         public readonly Transform Transform;
@@ -22,11 +23,11 @@ namespace Assets.Scripts.CarSystems.Components
         public readonly WaitForSeconds ReloadWait;
         public GameObject ProjectilePrefab;
 
-        private static Mesh _quadMesh;
+        private static Mesh _defaultProjectileMesh;
 
         static Weapon()
         {
-            CreateQuadMesh();
+            CreateDefaultProjectileMesh();
         }
 
         public Weapon(Gdf gdf, Transform transform)
@@ -63,7 +64,7 @@ namespace Assets.Scripts.CarSystems.Components
                 }
                 else
                 {
-                    meshFilter.mesh = _quadMesh;
+                    meshFilter.mesh = _defaultProjectileMesh;
                 }
 
                 MeshRenderer renderer = obj.GetComponent<MeshRenderer>();
@@ -86,43 +87,52 @@ namespace Assets.Scripts.CarSystems.Components
             ProjectilePrefab = obj.gameObject;
         }
 
-        private static void CreateQuadMesh()
+        private static void CreateDefaultProjectileMesh()
         {
-            const float width = 0.05f;
-            const float length = 0.25f;
+            const float radius = 0.03f;
+            const float halfLength = 0.15f;
 
             Mesh mesh = new Mesh();
 
             Vector3[] vertices =
             {
-                new Vector3(-width, 0f, -length),
-                new Vector3(-width, 0f, length),
-                new Vector3(width, 0f, -length),
-                new Vector3(width, 0f, length)
+                new Vector3(0f, 0f, halfLength),        // 0 front tip
+                new Vector3(radius, 0f, 0f),            // 1 right
+                new Vector3(0f, radius, 0f),            // 2 top
+                new Vector3(-radius, 0f, 0f),           // 3 left
+                new Vector3(0f, -radius, 0f),           // 4 bottom
+                new Vector3(0f, 0f, -halfLength),       // 5 back tip
             };
 
             Vector2[] uvs =
             {
-                new Vector2(0f, 0f),
-                new Vector2(0f, 1f),
-                new Vector2(1f, 0f),
-                new Vector2(1f, 1f)
+                new Vector2(0.5f, 1f),
+                new Vector2(1f, 0.5f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f)
             };
 
             int[] triangles =
             {
                 0, 1, 2,
-                1, 3, 2,
-                2, 1, 0,
-                2, 3, 1
+                0, 2, 3,
+                0, 3, 4,
+                0, 4, 1,
+                5, 2, 1,
+                5, 3, 2,
+                5, 4, 3,
+                5, 1, 4
             };
 
             mesh.vertices = vertices;
             mesh.uv = uvs;
             mesh.triangles = triangles;
-
+            mesh.RecalculateNormals();
             mesh.RecalculateBounds();
-            _quadMesh = mesh;
+
+            _defaultProjectileMesh = mesh;
         }
     }
 }
