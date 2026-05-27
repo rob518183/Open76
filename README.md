@@ -32,7 +32,7 @@ The primary goal of this project is to provide the same playing experience in a 
 A long term goal is to extend the engine with various modern features, such as HMD and VR support.
 
 ## Acknowledgements
-Without "That Tony"'s wonderful blog (http://hackingonspace.blogspot.se) and reverse engineering skills, this project would never have gotten anywhere. Tony reverse-engineered most of the formats used by I76.
+Without "That Tony"'s wonderful blog (http://hackingonspace.blogspot.se, archive: https://archive.is/Fnlzm) and reverse engineering skills, this project would never have gotten anywhere. Tony reverse-engineered most of the formats used by I76.
 
 ## More screenshots
 ![Screenshot 2](Screenshots/sc2.png)
