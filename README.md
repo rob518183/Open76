@@ -42,11 +42,6 @@ Without "That Tony"'s wonderful blog (http://hackingonspace.blogspot.se, archive
 ![Screenshot 6](Screenshots/sc6.png)
 ![Screenshot 7](Screenshots/sc7.png)
 
-## todo
-add main menu  
-add ai for enemy vehicles  
-add voice over  
-
 ## License
 Licensed under the GPL version 3.
 
