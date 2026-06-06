@@ -10,6 +10,7 @@ namespace Assets.Scripts
     {
         public Vector2 Speed;
         public float Height;
+        public float ScrollSpeed = 0.25f;
 
         // Added SerializeField so you can set the default texture in the Inspector
         [SerializeField]
@@ -51,7 +52,7 @@ namespace Assets.Scripts
             // 1. Scroll Texture
             if (_material != null)
             {
-                _material.mainTextureOffset += Speed * Time.deltaTime;
+                _material.mainTextureOffset += Speed * ScrollSpeed * Time.deltaTime;
             }
 
             // 2. Follow Camera (Skybox effect)

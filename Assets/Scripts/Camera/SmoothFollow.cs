@@ -18,7 +18,7 @@ namespace Assets.Scripts.Camera
         // The target we are following
         public Transform Target;
         // The distance in the x-z plane to the target
-        public float Distance = 10.0f;
+        public float Distance = 4.0f;
         // the height we want the camera to be above the target
         public float Height = 5.0f;
         // How much we 

@@ -298,6 +298,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Speed: {x: 0.05, y: 0.05}
   Height: 1
+  ScrollSpeed: 0.25
   _textureFileName: 
 --- !u!23 &831432017
 MeshRenderer:
@@ -1147,7 +1148,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   GamePath: C:\Program Files (x86)\GOG Galaxy\Games\Interstate 76
-  MissionFile: a01.msn
+  MissionFile: m01.msn
   VcfToLoad: vppirna1.vcf
   MusicMinIndex: 2
   MusicMaxIndex: 18

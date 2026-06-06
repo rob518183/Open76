@@ -186,6 +186,8 @@ namespace Assets.Scripts.Camera
         private void SetCameraThirdPerson()
         {
             _smoothFollow.Target = _player.transform;
+            _smoothFollow.Distance = 7.0f;
+            _smoothFollow.Height = 4.0f;
             _smoothFollow.enabled = true;
             transform.parent = null;
 

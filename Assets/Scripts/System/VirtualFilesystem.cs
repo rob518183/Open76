@@ -227,7 +227,7 @@ namespace Assets.Scripts.System
                 return GetDataStream(fileInfo);
             }
             
-            return null;
+            throw new FileNotFoundException("Virtual filesystem file not found: " + filename);
         }
         
         private FastBinaryReader GetDataStream(ZFSFileInfo fileInfo)
