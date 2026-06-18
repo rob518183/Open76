@@ -34,8 +34,12 @@ namespace Assets.Scripts.CarSystems
             {
                 // --- System Commands ---
                 if (kb.kKey.wasPressedThisFrame) _car.Kill();
-                if (kb.zKey.wasPressedThisFrame) Car.FireWeapons = !Car.FireWeapons;
+                // Toggle fire weapons (moved to 'V' to reserve 'Z' for handbrake)
+                if (kb.vKey != null && kb.vKey.wasPressedThisFrame) Car.FireWeapons = !Car.FireWeapons;
                 if (kb.sKey.wasPressedThisFrame) _car.ToggleEngine();
+
+                // --- Gear Controls ---
+                if (kb.tabKey.wasPressedThisFrame) ToggleGear();
 
                 // --- Radar Controls ---
                 if (kb.eKey.wasPressedThisFrame) _car.RadarPanel.CycleTarget();
@@ -97,8 +101,9 @@ namespace Assets.Scripts.CarSystems
                 if (kb.dKey.isPressed || kb.rightArrowKey.isPressed) steeringInput += 1f;
                 if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) steeringInput -= 1f;
 
-                // E-Brake (Shift)
+                // E-Brake (Shift or hold Z)
                 if (kb.leftShiftKey.isPressed) eBrakeInput = true;
+                if (kb.zKey.isPressed) eBrakeInput = true;
             }
 
             // Gamepad Axis Calculation
@@ -126,6 +131,19 @@ namespace Assets.Scripts.CarSystems
             _carPhysics.Brake = brake;
             _carPhysics.Steer = steeringInput;
             _carPhysics.EBrake = eBrakeInput;
+            _carPhysics.CurrentGear = _car.GearPanel.ActiveGear;
+        }
+
+        private void ToggleGear()
+        {
+            if (_car.GearPanel.ActiveGear == 'D')
+            {
+                _car.GearPanel.ActiveGear = 'R';
+            }
+            else if (_car.GearPanel.ActiveGear == 'R')
+            {
+                _car.GearPanel.ActiveGear = 'D';
+            }
         }
     }
 }

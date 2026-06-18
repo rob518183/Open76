@@ -36,6 +36,7 @@ namespace Assets.Scripts.CarSystems
         public float[] GearRatios;
         public float ReverseGearRatio;
         public float DifferentialRatio;
+        public char CurrentGear = 'D';
 
         private Vector2 _carVelocity;
         private float _speed;
@@ -118,6 +119,8 @@ namespace Assets.Scripts.CarSystems
 
             foreach (RaySusp wheel in FrontWheels)
             {
+                // Wheel visuals should follow driver steering input (SteerAngle),
+                // while physics uses inverted appliedSteerAngle when reversing.
                 wheel.TargetAngle = (SteerAngle * Mathf.Rad2Deg) * 2;
             }
         }
@@ -164,18 +167,30 @@ namespace Assets.Scripts.CarSystems
             if (_surfaceAudioSource != null)
             {
                 float surfaceVolume = Mathf.Min(_rigidbody.linearVelocity.magnitude * 0.025f, 0.6f);
-                AudioCategorySource surfaceCategory = _surfaceAudioSource.GetComponent<AudioCategorySource>();
-                if (surfaceCategory != null)
+                
+                // Stop audio when car is essentially stopped
+                if (surfaceVolume < 0.01f)
                 {
-                    surfaceCategory.SetBaseVolume(surfaceVolume);
+                    if (_surfaceAudioSource.isPlaying)
+                    {
+                        _surfaceAudioSource.Stop();
+                    }
                 }
                 else
                 {
-                    _surfaceAudioSource.volume = surfaceVolume;
-                }
-                if (!_surfaceAudioSource.isPlaying)
-                {
-                    _surfaceAudioSource.Play();
+                    AudioCategorySource surfaceCategory = _surfaceAudioSource.GetComponent<AudioCategorySource>();
+                    if (surfaceCategory != null)
+                    {
+                        surfaceCategory.SetBaseVolume(surfaceVolume);
+                    }
+                    else
+                    {
+                        _surfaceAudioSource.volume = surfaceVolume;
+                    }
+                    if (!_surfaceAudioSource.isPlaying)
+                    {
+                        _surfaceAudioSource.Play();
+                    }
                 }
             }
         }
@@ -230,26 +245,28 @@ namespace Assets.Scripts.CarSystems
             float avel = Mathf.Min(_speed, SteerSpeedBias);  // m/s
             Steer = Steer * (1.0f - (avel / SteerSpeedBias));
             SteerAngle = Steer * MaxSteer;
+            float appliedSteerAngle = (CurrentGear == 'R') ? -SteerAngle : SteerAngle;
 
-            if (Mathf.Abs(Throttle) < 0.1 && Mathf.Abs(_speed) < 0.5f)
+            // If nearly stopped and not applying throttle, lightly damp velocities instead of snapping to zero
+            if (Mathf.Abs(Throttle) < 0.1f && Mathf.Abs(_speed) < 0.5f)
             {
-                _rigidbody.linearVelocity = Vector3.zero;
-                _carVelocity = Vector2.zero;
-                _speed = 0;
-                _rigidbody.angularVelocity = Vector3.zero;
+                _rigidbody.linearVelocity *= 0.9f;
+                _carVelocity *= 0.9f;
+                _speed = _carVelocity.magnitude;
+                _rigidbody.angularVelocity *= 0.9f;
             }
-            if (Math.Abs(_speed) < float.Epsilon)
-                SteerAngle = 0;
+
+            // Scale steer effectiveness by speed to avoid large instantaneous pivots at very low speeds
+            float steerSpeedScale = Mathf.Clamp01(_speed / 1.0f); // scales from 0 (stopped) to 1 (>=1 m/s)
+            float appliedSteerAngleScaled = appliedSteerAngle * (0.25f + 0.75f * steerSpeedScale); // min 25% effectiveness at zero speed
 
             float rotAngle = 0.0f;
             float sideslip = 0.0f;
-            if (Mathf.Abs(_speed) > 0.5f)
-            {
-                rotAngle = Mathf.Atan2(_rigidbody.angularVelocity.y, _carVelocity.x);
-                sideslip = Mathf.Atan2(_carVelocity.y, _carVelocity.x);
-            }
+            float forwardVel = Mathf.Max(Mathf.Abs(_carVelocity.x), 0.1f);
+            rotAngle = Mathf.Atan2(_rigidbody.angularVelocity.y, forwardVel);
+            sideslip = Mathf.Atan2(_carVelocity.y, forwardVel);
 
-            float slipAngleFront = sideslip + rotAngle - SteerAngle;
+            float slipAngleFront = sideslip + rotAngle - appliedSteerAngleScaled;
             float slipAngleRear = sideslip - rotAngle;
 
             _totalWeight = _rigidbody.mass * Mathf.Abs(Physics.gravity.y);
@@ -267,6 +284,18 @@ namespace Assets.Scripts.CarSystems
             if (EBrake)
                 fLateralRear *= 0.5f;
 
+            // Skid visuals: enable skid trails on rear wheels when handbrake is held and rear slip is large
+            bool shouldSkid = EBrake && Mathf.Abs(slipRear) > 0.5f;
+            for (int i = 0; i < RearWheels.Length; ++i)
+            {
+                RaySusp rw = RearWheels[i];
+                if (rw == null) continue;
+                if (shouldSkid && rw.Grounded)
+                    rw.StartSkid();
+                else
+                    rw.StopSkid();
+            }
+
             _percentFront = _weightFront / weight - 1.0f;
             float weightShiftAngle = Mathf.Clamp(_percentFront * 50, -50, 50);
             Vector3 euler = Chassis.localRotation.eulerAngles;
@@ -274,7 +303,8 @@ namespace Assets.Scripts.CarSystems
             euler.z = Mathf.Clamp(((slipFront + slipRear) / (MaxGrip * 2)) * 5, -5, 5);
             Chassis.localRotation = Quaternion.Slerp(Chassis.localRotation, Quaternion.Euler(euler), Time.deltaTime * 5);
 
-            _fTraction = Vector2.right * EngineForce * Throttle;
+            float gearMultiplier = (CurrentGear == 'R') ? -1f : 1f;
+            _fTraction = Vector2.right * EngineForce * Throttle * gearMultiplier;
 
             if (_speed > 0 && Brake > 0)
             {
@@ -290,6 +320,8 @@ namespace Assets.Scripts.CarSystems
             float torque = _b * fLateralFront.y - _c * fLateralRear.y;
             float angularAcceleration = torque / _rigidbody.mass; // Really inertia but...
             _rigidbody.angularVelocity += Vector3.up * angularAcceleration * Time.deltaTime;
+            // Slight angular damping to reduce low-speed jitter
+            _rigidbody.angularVelocity *= 0.98f;
 
             _carAcceleration = Time.deltaTime * forces / _rigidbody.mass;
 

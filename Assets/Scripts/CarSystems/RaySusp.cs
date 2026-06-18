@@ -12,6 +12,7 @@ namespace Assets.Scripts.CarSystems
         private float _lastSpringLength;
         private Rigidbody _rigidbody;
         private Transform _wheelGraphic;
+        private TrailRenderer _skidTrail;
 
         public float TargetAngle;
 
@@ -30,6 +31,30 @@ namespace Assets.Scripts.CarSystems
             Vector3 euler = _wheelGraphic.localRotation.eulerAngles;
             euler.y = TargetAngle; // Mathf.Lerp(euler.y, TargetAngle, Time.deltaTime * 2);
             _wheelGraphic.localRotation = Quaternion.Euler(euler);
+        }
+
+        public void StartSkid()
+        {
+            if (_skidTrail != null) return;
+            _skidTrail = _wheelGraphic.gameObject.GetComponent<TrailRenderer>();
+            if (_skidTrail == null)
+            {
+                _skidTrail = _wheelGraphic.gameObject.AddComponent<TrailRenderer>();
+                _skidTrail.time = 3.0f;
+                _skidTrail.startWidth = 0.25f;
+                _skidTrail.endWidth = 0.05f;
+                _skidTrail.autodestruct = false;
+                var mat = new Material(Shader.Find("Sprites/Default"));
+                mat.color = Color.black;
+                _skidTrail.material = mat;
+            }
+            _skidTrail.emitting = true;
+        }
+
+        public void StopSkid()
+        {
+            if (_skidTrail == null) return;
+            _skidTrail.emitting = false;
         }
 
 
