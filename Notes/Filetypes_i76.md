@@ -1,3 +1,4 @@
+
 # **All the I76/Nitro On Disk Formats (That I Know About)** 
 
 _Note_ : My original blog is at: <u>HackingOnSpace (http://hackingonspace.blogspot.co.uk/). Go there for</u> more details on the reverse engineering process and examples of code, scripts and test apps. 
@@ -8,11 +9,14 @@ This document is the result of reverse engineering the on disk data files for ga
 
 Suggestions, edits and corrections are welcome.  Post changes up at http://forums.interstate76.com/ and flag for the user _tonyPick_ . 
 
-Big Thanks go out to 
+Big Thanks go out to: <br>
+**Lightfoot & D1VER**; from the I76 forum. Also check out D1VER's Homepage for much stuff.<br>
+**Erik**; a blog commenter who has some of the assets up in unity engine.<br>
+**Karl Meissner & Kurt Arnlund**; of the original I76 development team.<br>
+**Hoppo**; for an early I76 hacking site that saved me months of trial and error.<br>
+Many other internet sites, some only available via the wayback machine, for decoding various pieces of the puzzle. See the blog. 
 
-Lightfoot & D1VER; from the I76 forum. Also check out D1VER's Homepage for much stuff. Erik; a blog commenter who has some of the assets up in unity engine. Karl Meissner & Kurt Arnlund; of the original I76 development team. Hoppo; for an early I76 hacking site that saved me months of trial and error. Many other internet sites, some only available via the wayback machine, for decoding various pieces of the puzzle. See the blog. 
-
-If you are at all interested in this game then go over to http://forums.interstate76.com/ for live multiplayer servers, patched binaries and extra maps. At the time of writing you can get both I76 and Nitro Riders from GoG at https://www.gog.com/. And you should. They are still awesome. And _Funky_ , dig _?_ . 
+If you are at all interested in this game then go over to http://forums.interstate76.com/ for live multiplayer servers, patched binaries and extra maps. At the time of writing you can get both I76 and Nitro Riders from GoG at https://www.gog.com/. And you should. They are still awesome. And _Funky, dig?_
 
 _This Version: 25/07/17_ 
 
@@ -44,7 +48,7 @@ Unsigned 16 bit integer. Two bytes of file data.
 
 ###### _examples_ 
 
-So if file hex data is : “0x10 0x2D” Then the 16 bit value is 0x2D10 Or 11536 decimal 
+So if file hex data is : “0x10 0x2D”<br>Then the 16 bit value is 0x2D10 <br>Or 11536 decimal <br>
 
 #### **uint32_t** 
 
@@ -52,15 +56,15 @@ Unsigned 32 bit integer. Four bytes of file data.
 
 ###### _examples_ 
 
-If the file hex data is “0x11 0x22 0x33 0x44” Then the 32 bit value is 0x44332211 or  1144201745 decimal 
+If the file hex data is “0x11 0x22 0x33 0x44” <br>Then the 32 bit value is 0x44332211<br>or 1144201745 decimal 
 
-If the file hex data is “0xb0 0x1a 0x00 0x00” Then the 32 bit value is “0x00001ab0” or 6832 decimal 
+If the file hex data is “0xb0 0x1a 0x00 0x00”<br>Then the 32 bit value is “0x00001ab0”<br>or 6832 decimal 
 
 #### **float_t** 
 
 32 bit floating point value, held as IEEE-754 Single Precision floating point value (binary32). Four bytes of file data. 
 
-This means the floating point number is 1 bit sign 8 bit exponent 23 bit fraction 
+This means the floating point number is <br>1 bit sign <br>8 bit exponent <br>23 bit fraction 
 
 Floating point numbers are fiddly to do manually.  The good news is that many Hex Editors will interpret this type for you, and if coding on a PC then the conversion is a simple cast operation from the raw bytes to the C **_float_** type. 
 
@@ -70,9 +74,17 @@ For an online conversion routine that breaks down the details: <u>https://www.h-
 
 _examples_ 
 
-If the file data is “0x00 0xd0 0xd9 0x44” Then the 32 bit value is “0x44d9d000” Which is sign: 0, exponent 137, fraction 5885952 Or Exponent 10, Mantissa 1.70166015625 or 1742.5 decimal floating point 
+If the file data is “0x00 0xd0 0xd9 0x44” <br>
+Then the 32 bit value is “0x44d9d000” <br>
+Which is sign: 0, exponent 137, fraction 5885952 <br>
+Or Exponent 10, Mantissa 1.70166015625 <br>
+or 1742.5 decimal floating point <br>
 
-If the file hex data is “0x80 0xe3 0x43 0x47” Then the 32 bit value is “0x4743e380” Which is sign: 0, exponent 142, fraction 4449152 Or Exponent 15, Mantissa 1.5303802490234375 or 50147.5 decimal floating point 
+If the file hex data is “0x80 0xe3 0x43 0x47” <br>
+Then the 32 bit value is “0x4743e380” <br>
+Which is sign: 0, exponent 142, fraction 4449152 <br>
+Or Exponent 15, Mantissa 1.5303802490234375 <br>
+or 50147.5 decimal floating point <br>
 
 #### **Arrays: [ ]** 
 
@@ -86,104 +98,87 @@ So, for example, “ _uint32_t[4]_ ” indicates a set of four uint32_t values
 
 <u>The main compressed archive. This consists of</u> 
 
-|**Section**|**Size**|**Data**|
-|---|---|---|
-|Archive Header|28 Bytes|archive_hdr_t|
-|‘n’  Directory Headers, as|n * 36 Bytes|directory_hdr_t[n]|
-|determined by the archive<br>header|||
-|File Data|RemainingFile Size|Raw data bytes|
-
-
+| **Section** | **Size** | **Data** |
+| --- | --- | --- |
+| Archive Header | 28 Bytes | archive_hdr_t |
+| ‘n’  Directory Headers, as determined by the archive header | n * 36 Bytes | directory_hdr_t[n] |
+| File Data | RemainingFile Size | Raw data bytes |
 
 ###### Where 
 
 ###### <u>archive_hdr_t</u> 
-
-|char[4]  ident_string|Always ZFSF|
-|---|---|
-|uint32_t  version|Always 1|
-|uint32_t_unknown_|Always 0x10(more version?)|
-|uint32_t  files_per_directory|The number of files each directoryentrywill describe|
-|uint32_t  total_files|The total number of files in this archive|
-|uint32_t  null_marker|Always 0|
-|uint32_t_unknown_||
-
+| Type | Description |
+| --- | --- |
+| `char[4] ident_string` | Always `ZFSF` |
+| `uint32_t version` | Always `1` |
+| `uint32_t unknown` | Always `0x10` (more version?) |
+| `uint32_t files_per_directory` | The number of files each directory entry will describe |
+| `uint32_t total_files` | The total number of files in this archive |
+| `uint32_t null_marker` | Always `0` |
+| `uint32_t unknown` |  |
 
 
 ###### <u>directory_hdr_t</u> 
 
-|uint32_t|next_directory|Offset to the next directoryheader|
-|---|---|---|
-|_Thenfor_|_eachfile in directory_|As determined byfiles_per_directory|
-||char[16] name|Name of the file|
-||uint32_t  data_offset|Position of file data in this archive|
-||uint32_t  id|File id|
-||uint32_t  data_length|Length of Data in the archive|
-||uint32_t_unknown_||
-||byte compress|Compression Flags_(always 0 for I76, sometimes set in Nitro)_<br>0 = no compression<br>2 = LZO 1x<br>4 = LZO 1y|
-||uint24_t output_size|Decompressed file size(0 if no compression)|
-
-
+| **Section** | **Size** |
+| --- | --- |
+| uint32_t next_directory | Offset to the next directoryheader | 
+| _Then for each file in directory_ | As determined by files_per_directory | 
+| char[16] name | Name of the file | 
+| uint32_t  data_offset | Position of file data in this archive | 
+| uint32_t  id | File id | 
+| uint32_t  data_length | Length of Data in the archive | 
+| uint32_t_unknown_ |  | 
+| byte compress | Compression Flags_(always 0 for I76, sometimes set in Nitro)_<br>0 = no compression<br>2 = LZO 1x<br>4 = LZO 1y | 
+| uint24_t output_size | Decompressed file size(0 if no compression) | 
 
 ### **MW2** 
 
 Another compressed archive, but with fewer (less interesting) files and no name/directory structures. 
 
-|**Section**||**Size**|**Data**|
-|---|---|---|---|
-|Archive Header|Variable||mw2_hdr_t|
-
-
+| **Section** | **Size** | **Data** |
+| --- | --- | --- |
+| Archive Header | Variable | mw2_hdr_t |
 
 ###### Where 
 
 ###### <u>mw2_hdr_t</u> 
 
-|unit32_t file_count|Number of files|
-|---|---|
-|_For eachfile_|As determined byfile_count|
-|uint32_t  data_offset|Position of file data in this archive|
-
-
+| unit32_t file_count | Number of files |
+| --- | --- |
+| _For each file_ | As determined by file_count |
+| uint32_t data_offset | Position of file data in this archive |
 
 ### **Geo** 
 
 <u>Geometry file. Describes a set of vertices and faces, which represent a model.</u> 
 
-|**Section**|**Size**||**Data**|
-|---|---|---|---|
-|GeometryHeader|36 bytes|geo_hdr_t||
-|‘n’ Vertex Positions|n * 12|vertex_t||
-|‘n’ Vertex Normals|n * 12|normal_t||
-|‘m’ Faces|Variable (determined by vertex<br>per face)|face_t||
-
-
+| **Section** | **Size** |  | **Data** |
+| --- | --- | --- | --- |
+| GeometryHeader | 36 bytes | geo_hdr_t |  |
+| ‘n’ Vertex Positions | n * 12 | vertex_t |  |
+| ‘n’ Vertex Normals | n * 12 | normal_t |  |
+| ‘m’ Faces | Variable (determined by vertex<br>per face) | face_t |  |
 
 ###### <u>geo_hdr_t</u> 
 
-|char[4]  ident_string|Always “EOG.”|
-|---|---|
-|uint32_t_unknown_||
-|char[16] name|Associated name to this objectgeometry|
-|uint32_t  vertex count||
-|uint32_t  face_count||
-|uint32_t_unknown_||
-
-
+| char[4]  ident_string | Always “EOG.” |
+| --- | --- |
+| uint32_t_unknown_ |  |
+| char[16] name | Associated name to this object geometry |
+| uint32_t  vertex count |  |
+| uint32_t  face_count |  |
+| uint32_t_unknown_ |  |
 
 ###### <u>vertex_t</u> 
 
-|float32_t[3]  vertex_data|X, Y & Z values|
-|---|---|
-
-
+| float32_t[3]  vertex_data | X, Y & Z values |
+| --- | --- |
 
 ###### <u>normal_t</u> 
 
-|float32_t[3]  normal_data|X, Y & Z values|
-|---|---|
-
-
+| float32_t[3]  normal_data | X, Y & Z values |
+| --- | --- |
 
 ###### <u>face_t</u> 
 
@@ -194,22 +189,18 @@ Another compressed archive, but with fewer (less interesting) files and no name/
 |char face_g|
 |char face_b|
 
-
-
-|float32_t[4] surface_normal||
-|---|---|
-|uint32_t_unknown_||
-|char[3]_unknown_|Face flags?|
-|char[13] texture_name||
-|uint32_t_unknown_||
-|uint32_t_unknown_||
-|_For eachface vertex_|Asgiven byface_vertices|
-|uint32_t vertex_index||
-|uint32_t normal_index||
-|float32_t U||
-|float32_t V||
-
-
+| float32_t[4] surface_normal |  |
+| --- | --- |
+| uint32_t_unknown_ |  |
+| char[3]_unknown_ | Face flags? |
+| char[13] texture_name |  |
+| uint32_t_unknown_ |  |
+| uint32_t_unknown_ |  |
+| _For eachface vertex_ | Asgiven by face_vertices |
+| uint32_t vertex_index |  |
+| uint32_t normal_index |  |
+| float32_t U |  |
+| float32_t V |  |
 
 ### **Pix & Pak** 
 
@@ -231,30 +222,24 @@ Sound clips. These are plain .wav files. You can play them in a stock media play
 
 <u>Colour Bank file. This describes a set of 4x4 pixel block pattern used to generate textures.</u> 
 
-|unit32_t entries|Count of entries in this file|
-|---|---|
-|_Then,for each entry_||
-|char[16]|4x4 pattern, each byte references a LUT entry|
-|pattern||
-
-
+| unit32_t entries | Count of entries in this file |
+| --- | --- |
+| _Then,for each entry_ |  |
+| char[16] | 4x4 pattern, each byte references a LUT entry |
+| pattern |  |
 
 ### **VQM** 
 
 A texture image. This references the 4x4 pixel patterns in a CBK file to generate the texture. The texture width and height do not have to be divisible by 4, and code must handle this and ignore pixels that fall outside the image bounds. 
 
-|unit32_tpattern_width||
-|---|---|
-|unit32_tpattern_height||
-|char[16] cbk_ref|Colour bank file associated with thispattern|
+| unit32_tpattern_width |  |
+| --- | --- |
+| unit32_tpattern_height |  |
+| char[16] cbk_ref | Colour bank file associated with thispattern |
 
-
-
-|_Then for each 4x4 block_|Describe each 4x4 pixel block. Either a solid colour or pattern<br>reference|
-|---|---|
-|uint16_t<br>reference|Pattern reference<br>if “reference & 0x8000”<br>Fill 4x4 block with the solid colour from the CLUT entry given<br>by reference &0xff<br>else<br>Fill 4x4 block with the CBKpattern at this index|
-
-
+| _Then for each 4x4 block_ | Describe each 4x4 pixel block. Either a solid colour or pattern<br>reference |
+| --- | --- |
+| uint16_t<br>reference | Pattern reference<br>if “reference & 0x8000”<br>Fill 4x4 block with the solid colour from the CLUT entry given<br>by reference &0xff<br>else<br>Fill 4x4 block with the CBKpattern at this index |
 
 ### **MAP** 
 
@@ -266,18 +251,14 @@ Terrain file. Each terrain file contains one or more 32K blocks, each of which s
 
 Each bit of the heightmap covers a 5 Meter square, and each terrain block of 128*128 values is a 640 x 640 meter region. 
 
-|**Section**|**Size**|**Data**|
-|---|---|---|
-|‘n’ Terrain blocks|n * 32KBytes|terrain_block_t|
+| **Section** | **Size** | **Data** |
+| --- | --- | --- |
+| ‘n’ Terrain blocks | n * 32KBytes | terrain_block_t |
 
-
-
-|Where:<br>terrain_block_t||
-|---|---|
-|uint16_t terrain[128][128]|Terrain Value|
-||terrain & 0xfff gives the 12 bit height value<br>terrain &0xf000gives terrain detail flags.|
-
-
+| Where:<br>terrain_block_t |  |
+| --- | --- |
+| uint16_t terrain[128][128] | Terrain Value |
+| terrain & 0xfff gives the 12 bit height value<br>terrain &0xf000gives terrain detail flags. |  |
 
 ## **BWD2 Files** 
 
@@ -287,17 +268,15 @@ The BWD2 files are used to support several different types of game file.
 
 BWD2 files have a flexible format. Each file is made up of several data sections, each of which has the following layout: 
 
-|char[4]  identifier|Type of section|
-|---|---|
-|unit32_t length|Length(includingthe identifier)|
-
-
+| char[4]  identifier | Type of section |
+| --- | --- |
+| unit32_t length | Length(includingthe identifier) |
 
 Associated data, format details determined by identifier 
 
 byte[length-8] data 
 
-BWD2 files are used for  files of type msn, lvl, cbt, rac, vdf, gdf, wdf, cdf,vcf,sdf,vtf & xdf. Possibly others. 
+BWD2 files are used for files of type msn, lvl, cbt, rac, vdf, gdf, wdf, cdf, vcf, sdf, vtf & xdf. Possibly others. 
 
 A BWD2 File Opens with Tag: BWD2 Length: 8 Data: No data And Ends With Tag: EXIT Length: 8 Data: No data 
 
@@ -351,64 +330,54 @@ Some tags may be 0 sized (such as the ADEF section in multiplayer maps, where th
 
 #### **REV** 
 
-|uint32_t revision|Main File Revision|
-|---|---|
-
-
+| uint32_t revision | Main File Revision |
+| --- | --- |
 
 #### **WDEF** 
 
 ###### <u>World definition from mission files</u> 
 
-|WREV|BWD2 Revision Info|
-|---|---|
-|WRLD|BWD2 World Info|
-|EXIT||
-
-
+| WREV | BWD2 Revision Info |
+| --- | --- |
+| WRLD | BWD2 World Info |
+| EXIT |  |
 
 #### **WREV** 
 
-|uint32_t revision|World Data revision. Modifies  WRLD content|
-|---|---|
-||Revision 8 is I76|
-||Revision 9 is Nitro|
-
-
+| uint32_t revision | World Data revision. Modifies  WRLD content |
+| --- | --- |
+| Revision 8 is I76 |  |
+| Revision 9 is Nitro |  |
 
 #### **WRLD** 
 
-|uint32_t cd track||
-|---|---|
-|char[13]  intro_movie||
-|char[13]  outro_movie||
-|char[13]pallete_file||
-|char[13]  luma_file||
-|char[13]  trans_file||
-|char[13]  objectives_file||
-|char[13]  sky_file||
-|char[13]  scrounge_file||
-|char[13]  surface_file||
-|char[13]  level_file||
-|_if version == 9_<br>char[13]  hzd_file|Only present in Nitro|
-|uint32_t time||
-|float32[40]_unknown_||
-|uint32_t clip_distance||
-|char[16]  level_name||
-
-
+| uint32_t cd track |  |
+| --- | --- |
+| char[13]  intro_movie |  |
+| char[13]  outro_movie |  |
+| char[13]pallete_file |  |
+| char[13]  luma_file |  |
+| char[13]  trans_file |  |
+| char[13]  objectives_file |  |
+| char[13]  sky_file |  |
+| char[13]  scrounge_file |  |
+| char[13]  surface_file |  |
+| char[13]  level_file |  |
+| _if version == 9_<br>char[13]  hzd_file | Only present in Nitro |
+| uint32_t time |  |
+| float32[40]_unknown_ |  |
+| uint32_t clip_distance |  |
+| char[16]  level_name |  |
 
 #### **TDEF** 
 
 Terrain Definition 
 
-|TREV|Revision Info|
-|---|---|
-|ZMAP|Zone Map|
-|ZONE|Zone Info|
-|EXIT||
-
-
+| TREV | Revision Info |
+| --- | --- |
+| ZMAP | Zone Map |
+| ZONE | Zone Info |
+| EXIT |  |
 
 #### **TREV** 
 
@@ -418,39 +387,31 @@ uint32_t revision Terrain Data revision. Always 4
 
 Zone Map. This describes an area of 80x80 terrain zones. Each zone  is a single 128*128 TER <u>block reference from the</u> _<u>.ter</u>_ <u>file (named in the ZONE section).</u> 
 
-|byte max_zone|count of zones active on this map|
-|---|---|
-|byte [6400]|80x80 map of zone references<br>if value == 0xff|
-||then default flat zone<br>else|
-||reference to .ter file zone|
-
-
+| byte max_zone | count of zones active on this map |
+| --- | --- |
+| byte [6400] | 80x80 map of zone references<br>if value == 0xff |
+| then default flat zone<br>else |  |
+| reference to .ter file zone |  |
 
 #### **ZONE** 
 
-|Zone information||
-|---|---|
-|byte_unknown_||
-|char[13] zonemap|Name of the terrain file providing the zones indexed by the<br>ZMAP|
-
-
+| Zone information |  |
+| --- | --- |
+| byte_unknown_ |  |
+| char[13] zonemap | Name of the terrain file providing the zones indexed by the<br>ZMAP |
 
 #### **ODEF** 
 
-|“simple”single object s||
-|---|---|
-|OREV|BWD2 Revision Info|
-|OBJ[]|BWD2 Objects|
-|EXIT||
-
-
+| “simple”single object s |  |
+| --- | --- |
+| OREV | BWD2 Revision Info |
+| OBJ[] | BWD2 Objects |
+| EXIT |  |
 
 #### **OREV** 
 
-|uint32_t revision|Object Data Revision(Always 3?)|
-|---|---|
-
-
+| uint32_t revision | Object Data Revision(Always 3?) |
+| --- | --- |
 
 #### **OBJ** 
 
@@ -459,15 +420,11 @@ Zone Map. This describes an area of 80x80 terrain zones. Each zone  is a single 
 |char[9]  label|
 |float32_t[9] rotation|
 
-
-
 |float32_t[3]position|
 |---|
 |uint32_t[9]_unknown_|
 |uint32_t class_id|
 |uint32_t_unknown_|
-
-
 
 #### **LDEF** 
 
@@ -477,41 +434,35 @@ Zone Map. This describes an area of 80x80 terrain zones. Each zone  is a single 
 |OBJ[]<br>BWD2 Objects(linked version)|
 |EXIT|
 
-
-
 #### **LREV** 
 
 uint32_t revision Object Data Revision 
 
 #### **OBJ** 
 
-|Object (Linked Version)||
-|---|---|
-|char[9]  label||
-|float32_t[9] rotation||
-|float32_t[3]position||
-|uint32_t[9]_unknown_||
-|uint32_t class_id||
-|uint32_t_unknown_||
-|uint32_t string_count||
-|_Then,for each string value_|Asgiven bystring_count|
-|float32_t[3]point|A co-ordinate for apoint in the string|
-
-
+| Object (Linked Version) |  |
+| --- | --- |
+| char[9]  label |  |
+| float32_t[9] rotation |  |
+| float32_t[3]position |  |
+| uint32_t[9]_unknown_ |  |
+| uint32_t class_id |  |
+| uint32_t_unknown_ |  |
+| uint32_t string_count |  |
+| _Then,for each string value_ | Asgiven bystring_count |
+| float32_t[3]point | A co-ordinate for apoint in the string |
 
 #### **RDEF** 
 
 ###### <u>Road Definition</u> 
 
-|RREV|BWD2 Revision Info|
-|---|---|
-|RSEG[]|BWD2 Road Segment|
-|EXIT||
-|EXIT||
-|EXIT||
-|EXIT||
-
-
+| RREV | BWD2 Revision Info |
+| --- | --- |
+| RSEG[] | BWD2 Road Segment |
+| EXIT |  |
+| EXIT |  |
+| EXIT |  |
+| EXIT |  |
 
 For some reason RDEF sections have extra EXIT declarations trailing (consistently four?). I have no idea why. 
 
@@ -521,50 +472,42 @@ uint32_t revision Road Data Revision
 
 #### **RSEG** 
 
-|Object||
-|---|---|
-|uint32_t type|Road Surface Type|
-|uint32_t segment_count||
-|_Thenfor each segment_|Asgiven bycount|
-|float32_t[3] start||
-|float32_t[3] end||
-
-
+| Object |  |
+| --- | --- |
+| uint32_t type | Road Surface Type |
+| uint32_t segment_count |  |
+| _Thenfor each segment_ | Asgiven bycount |
+| float32_t[3] start |  |
+| float32_t[3] end |  |
 
 #### **VDFC** 
 
 <u>Vehicle Descriptor. This looks to be the central definition of each vehicle.</u> 
 
-|char[20]  name|Name of the Vehicle|
-|---|---|
-|uint32_t_unknown_||
-|uint32_t_unknown_||
-|float32_t[4]_unknown_||
-|uint32_t_unknown_||
-|float32_t[4]_unknown_||
-
-
+| char[20]  name | Name of the Vehicle |
+| --- | --- |
+| uint32_t_unknown_ |  |
+| uint32_t_unknown_ |  |
+| float32_t[4]_unknown_ |  |
+| uint32_t_unknown_ |  |
+| float32_t[4]_unknown_ |  |
 
 #### **VSHL** 
 
-|Links a bmp to a vehicle||
-|---|---|
-|char[45]  bmp_name|Name of the Vehicle BMP|
-
-
+| Links a bmp to a vehicle |  |
+| --- | --- |
+| char[45]  bmp_name | Name of the Vehicle BMP |
 
 #### **VGEO** 
 
 Vehicle Geometry Parts. The component pieces of model geometry that are combined to make a single in game vehicle, and some of the internal geometry (for the in car views when using the handgun). 
 
-|uint32_t unknown||
-|---|---|
-|_Then for each segment_|As given by data size,100 bytes per entry. The grouping looks to<br>be 31 entriesper model.|
-|char[8] Label||
-|float32_t[12] fv|0-8: 3x3 transform matrix (probably)<br>9:X<br>10:Z<br>11:Y.|
-|char[8]|Thepart thisposition is relative to. This is either apart label or|
-
-
+| uint32_t unknown |  |
+| --- | --- |
+| _Then for each segment_ | As given by data size,100 bytes per entry. The grouping looks to<br>be 31 entriesper model. |
+| char[8] Label |  |
+| float32_t[12] fv | 0-8: 3x3 transform matrix (probably)<br>9:X<br>10:Z<br>11:Y. |
+| char[8] | Thepart thisposition is relative to. This is either apart label or |
 
 <u>position_root</u> WORLD for global positions byte[36] _unknown_ 
 
@@ -582,37 +525,31 @@ uint32_t _unknown_ float32_t _unknown_ float32_t _unknown_ byte[12] _unknown_ fl
 |char[8]position_root|
 |byte[36]_unknown_|
 
-
-
 #### **ETBL** 
 
-|char[13] ident string|Mapname|
-|---|---|
-|uint32_t_unknown_||
-|uint32_t section_count||
-|byte_unknown_||
-|Then for each segment|Asgiven bysection_count|
-|char[16] label||
-|uint32_t unknown||
-|uint32_t unknown||
-|uint32_t unknown||
-|uint32_t unknown||
-
-
+| char[13] ident string | Mapname |
+| --- | --- |
+| uint32_t_unknown_ |  |
+| uint32_t section_count |  |
+| byte_unknown_ |  |
+| Then for each segment | As given by section_count |
+| char[16] label |  |
+| uint32_t unknown |  |
+| uint32_t unknown |  |
+| uint32_t unknown |  |
+| uint32_t unknown |  |
 
 #### **VCHK** 
 
 <u>Part of the vehicle definition</u> char[8] label uint32_t section_count 
 
-|byte unknown||
-|---|---|
-|_Thenfor each segment_|Asgiven bysection_count|
-|char[8] label||
-|float32_t[12]  fv||
-|char[8] root|(Always WORLD?)|
-|byte[36]_unknown_||
-
-
+| byte unknown |  |
+| --- | --- |
+| _Then for each segment_ | As given by section_count |
+| char[8] label |  |
+| float32_t[12]  fv |  |
+| char[8] root | (Always WORLD?) |
+| byte[36]_unknown_ |  |
 
 #### **ADEF** 
 
@@ -620,12 +557,10 @@ This is the mission script and associated references (audio, triggers, etc).
 
 This is a fairly complex section.  The scripting is run on a small stack based virtual machine. 
 
-|AREV|BWD2 Revision Info|
-|---|---|
-|FSM|BWD2 Finite State Machine|
-|EXIT||
-
-
+| AREV | BWD2 Revision Info |
+| --- | --- |
+| FSM | BWD2 Finite State Machine |
+| EXIT |  |
 
 #### **AREV** 
 
@@ -639,47 +574,41 @@ The FSM section describes several independent machines, and every game engine �
 
 The main FSM structure is: 
 
-|uint32_t action_count||
-|---|---|
-|_Thenfor each action_|Asgiven byaction_count|
-|char[40] name|These are action aliases, and this table is always the<br>same|
-|uint32_t entity_count||
-|_Thenfor each entity_||
+| uint32_t action_count |  |
+| --- | --- |
+| _Thenfor each action_ | Asgiven byaction_count |
+| char[40] name | These are action aliases, and this table is always the<br>same |
+| uint32_t entity_count |  |
+| _Thenfor each entity_ |  |
 
-
-
-|char[40] aliasname||
-|---|---|
-|char[8] itemname||
-|<br>uint32_t audio_count||
-|_Thenfor each audio clip_<br>char[40] clipfile<br>uint32_tpath_count||
-|_Thenfor eachpath_<br>||
-|char[40]pathname||
-|uint32_tpoint_count||
-|_Thenfor eachpoint_||
-|float32_t[3]pt<br>uint32_t machine_count||
-|_Thenfor each machine_||
-|uint32_t[42] machine_def||
-|uint32_t argument_count||
-|_Thenfor each  argument_||
-|uint32_t arg|A set of initial arguments, which are referenced by<br>individual machines|
-|uint32_t microcode_count|Count of operation/argumentpairs|
-|_Thenfor each  microcode_||
-|uint32_t op|opcode|
-|uint32_t val|Argument value|
-
-
+| char[40] aliasname |  |
+| --- | --- |
+| char[8] itemname |  |
+| <br>uint32_t audio_count |  |
+| _Thenfor each audio clip_<br>char[40] clipfile<br>uint32_tpath_count |  |
+| _Thenfor eachpath_<br> |  |
+| char[40]pathname |  |
+| uint32_tpoint_count |  |
+| _Thenfor eachpoint_ |  |
+| float32_t[3]pt<br>uint32_t machine_count |  |
+| _Thenfor each machine_ |  |
+| uint32_t[42] machine_def |  |
+| uint32_t argument_count |  |
+| _Thenfor each  argument_ |  |
+| uint32_t arg | A set of initial arguments, which are referenced by<br>individual machines |
+| uint32_t microcode_count | Count of operation/argumentpairs |
+| _Thenfor each  microcode_ |  |
+| uint32_t op | opcode |
+| uint32_t val | Argument value |
 
 ##### **_Machine Definition_** 
 
 ###### <u>Each machine represents a compiled game script, and is defined as follows:</u> 
 
-|uint32_t start_address|Initial start address in microcode|
-|---|---|
-|uint32 arg_stack_sz||
-|uint32[40] arguments|arg_stack_sz arguments used<br>0’s for unused|
-
-
+| uint32_t start_address | Initial start address in microcode |
+| --- | --- |
+| uint32 arg_stack_sz |  |
+| uint32[40] arguments | arg_stack_sz arguments used<br>0’s for unused |
 
 Each running machine tracks: 
 
@@ -699,61 +628,59 @@ The game keeps a list of machine details loaded from the mission file, and loops
 
 ##### **_OpCode Summaries_** 
 
-|1|PUSH|Stack Push|Argument written at SP<br>Increment SP|
-|---|---|---|---|
-|2|Unused|||
-|3|Unused|||
-|4|COPY_S|CopyArgument From Stack.|Copyfrom "BP+argument" to AS|
-|5|COPY_B|Copy Argument from Parameter.|Copy from "BP + argument-1" to<br>AS.<br>Negative Arguments Expected.|
-|6|STACK_MOD|Add Elements to stack.|SP = SP + argument.|
-|7|POP|POP Elements from stack.|SP = SP - argument|
-|8|JMP|Unconditional Jump.|Set IP to argument|
-|9|JZ|Conditional Jump.|If AR is 0 then set IP to argument|
-|10|JMP_I|Unconditional Jump and De-<br>schedule.|Set IP to argument<br>Suspend the runninginstance|
-|11|Unused|||
-|12|RST|Reset Machine to base state|Reload IP<br>Reset SP|
-|13|ACTION|Perform Action given by<br>argument.|Consumes AS<br>Issues action to main game engine<br>Modifies AR with result|
-|14|NEG|Negate Result|Complement AR|
-|15|Unused|||
-
-
+| 1 | PUSH | Stack Push | Argument written at SP<br>Increment SP |
+| --- | --- | --- | --- |
+| 2 | Unused |  |  |
+| 3 | Unused |  |  |
+| 4 | COPY_S | CopyArgument From Stack. | Copyfrom "BP+argument" to AS |
+| 5 | COPY_B | Copy Argument from Parameter. | Copy from "BP + argument-1" to<br>AS.<br>Negative Arguments Expected. |
+| 6 | STACK_MOD | Add Elements to stack. | SP = SP + argument. |
+| 7 | POP | POP Elements from stack. | SP = SP - argument |
+| 8 | JMP | Unconditional Jump. | Set IP to argument |
+| 9 | JZ | Conditional Jump. | If AR is 0 then set IP to argument |
+| 10 | JMP_I | Unconditional Jump and De-<br>schedule. | Set IP to argument<br>Suspend the runninginstance |
+| 11 | Unused |  |  |
+| 12 | RST | Reset Machine to base state | Reload IP<br>Reset SP |
+| 13 | ACTION | Perform Action given by<br>argument. | Consumes AS<br>Issues action to main game engine<br>Modifies AR with result |
+| 14 | NEG | Negate Result | Complement AR |
+| 15 | Unused |  |  |
 
 ## **The CLUT** 
 
 This is the RGB colour Lookup Table used by all the game textures. Erik thinks that later entries are transparent, based on surface flag. I can neither confirm, nor deny. 
 
-|static unsig<br>0x000000,|ned int  LUT|[256] ={|||
-|---|---|---|---|---|
-|<br>0xf0e0b0,<br>0xa0b0c8,|0xf0e898,<br>0xb0c0d8,|0xf0d090,|0xe0c088,|0xd0b090,   0xd09898,   0xd0b8b0,   0xb8b8b0,|
-|0xc0d8e8,<br>0x506070,|0x78b0d0,<br>0x505868,|0x8898a8,|0x7888a0,|0x688090,   0x687880,   0x607080,   0x586878,|
-|0x485068,<br>|0x405870,<br>|0x305878,|0x386888,|0x507088,   0x4888a8,   0x2870a0,   0x0870c0,|
-|0x005fb3,|0x005898,||||
-|0x004888,<br>0x304058,|0x003878,<br>0x303850,|0x003060,|0x082858,|0x104060,   0x185060,   0x304860,   0xb56f4b,|
-|0x203850,<br>0x495e1c,|0x283860,<br>0x405020,|0x404040,|0x503838,|0x505038,   0x486038,   0x606838,   0x587020,|
-|0x403820,<br>0x202020,|0x482818,<br>0x282820,|0x401810,|0x400800,|0x2e0600,   0x1f0400,   0x874827,   0x101820,|
-|<br>0x302820,|<br>0x202838,|0x102838,|0x081038,|0x000058,   0x080878,   0x000890,   0x9c5936,|
-|0x3018b0,|0x5810a0,||||
-|<br>0x900868,<br>0x788858,|<br>0xa03050,<br>0x432828,|0x904850,|0x805850,|0x886860,   0x907868,   0x807870,   0x808868,|
-|0x3b2020,<br>0x74280c,|0x805830,<br>0x602810,|0xa06030,|0xa86010,|0x985808,   0x805008,   0x883010,   0x783018,|
-|0x584020,<br>0x900010,|0x883030,<br>0xa80808,|0x981028,|0x801020,|0x800010,   0x780008,   0x680008,   0x461008,|
-|0xc00818,<br>0xe07008,|0xe00810,<br>0xde7003,|0xf81010,|0xe03800,|0xe84800,   0xf84000,   0xf85008,   0xf85008,|
-|0xe67800,<br>0xfdaf1a,|0xd88000,<br>0xf0a028,|0xd89800,|0xe89800,|0xf0a000,   0xffb200,   0xffc100,   0xffcc04,|
-|0xe09020,<br>0xa89048,|0xf07030,<br>0xa89828,|0xfa7338,<br>|0xf0a048,|0xe8a848,   0xd0a048,   0x6d371b,   0xa89060,|
-|0x809828,<br>0xf8e858,|0x708828,<br>0xf8d060,|0x588820,<br>|0x619b1e,|0x6db21c,   0x79cc1b,   0xd0c828,   0xe8e830,|
-|0xfcc56d,<br>0xc07070,|0xf0c058,<br>0x989880,|0xe07868,<br>|0xd86060,|0xe05860,   0xc54969,   0xb05060,   0xb86870,|
-|<br>0xa09890,<br>0xa03008,|<br>0xc86030,<br>0xe83058,|<br>0xc06008,|0xc85808,|0xcb5c00,   0xd06800,   0xc03808,   0xa83010,|
-|0x389058,<br>0x260c00,|0x188820,<br>0x084820,|0x088913,|0x086810,|0x015801,   0x004000,   0x003400,   0x012801,|
-|0x105030,<br>0xa98954,|0x007830,<br>0x9f793f,|0x1088e0,|0x38a0d8,|0x1010e8,   0xb79c70,   0xb39668,   0xaf905f,|
-|<br>0x93713a,<br>0x5b4524,|<br>0x8e6d38,<br>0x4f3c1f,|0x886936,|0x826433,|0x7c5f30,   0x75592e,   0x6d532b,   0x654d28,|
-|<br>0x372a16,<br>|<br>0xf7f7c8,<br>|0xfae68c,|0xfcdc61,|0xf8c355,   0xdac078,   0xdfa66c,   0xe6a336,|
-|0xf2884e,|0xe3881c,||||
-|<br>0xb08b44,<br>0x282814,|<br>0xfc6330,<br>0x004500,|0xde6b18,|0x9e610d,|0xab4400,   0x732828,   0x930800,   0x414820,|
-|<br>0x387338,<br>0xd10028,|<br>0x3f8f3f,<br>0xfa0032,|0x519c51,|0x63bd63,|0x7ef37e,   0x502f1b,   0x790018,   0xa10020,|
-|<br>0x9e9a1a,<br>0xd5e8f6,|<br>0xccc722,<br>0xcee3f5,|0xeee602,|0xfcfcfc,|0xf3f8fb,   0xedf3fa,   0xe5f0f9,   0xddecf7,|
-|<br>0xc6e0f3,<br>0x88c1eb,|<br>0xbeddf3,<br>0xffffff,|0xb6d9f2,|0xafd5f1,|0xa7d1f0,   0x9fcdee,   0x97c9ed,   0x90c5ec,|
-|<br>0xeeeeee,<br>|<br>0xdddddd,<br>|0xcccccc,|0xbbbbbb,|0xaaaaaa,   0x999999,   0x888888,   0x767676,|
-|0x656565,|0x545454,||||
-|<br>0x434343,|<br>0x323232,|0x202020,|0x101010,|0x010101,|
+| static unsig<br>0x000000, | ned int  LUT | [256] ={ |  |  |
+| --- | --- | --- | --- | --- |
+| <br>0xf0e0b0,<br>0xa0b0c8, | 0xf0e898,<br>0xb0c0d8, | 0xf0d090, | 0xe0c088, | 0xd0b090,   0xd09898,   0xd0b8b0,   0xb8b8b0, |
+| 0xc0d8e8,<br>0x506070, | 0x78b0d0,<br>0x505868, | 0x8898a8, | 0x7888a0, | 0x688090,   0x687880,   0x607080,   0x586878, |
+| 0x485068,<br> | 0x405870,<br> | 0x305878, | 0x386888, | 0x507088,   0x4888a8,   0x2870a0,   0x0870c0, |
+| 0x005fb3, | 0x005898, |  |  |  |
+| 0x004888,<br>0x304058, | 0x003878,<br>0x303850, | 0x003060, | 0x082858, | 0x104060,   0x185060,   0x304860,   0xb56f4b, |
+| 0x203850,<br>0x495e1c, | 0x283860,<br>0x405020, | 0x404040, | 0x503838, | 0x505038,   0x486038,   0x606838,   0x587020, |
+| 0x403820,<br>0x202020, | 0x482818,<br>0x282820, | 0x401810, | 0x400800, | 0x2e0600,   0x1f0400,   0x874827,   0x101820, |
+| <br>0x302820, | <br>0x202838, | 0x102838, | 0x081038, | 0x000058,   0x080878,   0x000890,   0x9c5936, |
+| 0x3018b0, | 0x5810a0, |  |  |  |
+| <br>0x900868,<br>0x788858, | <br>0xa03050,<br>0x432828, | 0x904850, | 0x805850, | 0x886860,   0x907868,   0x807870,   0x808868, |
+| 0x3b2020,<br>0x74280c, | 0x805830,<br>0x602810, | 0xa06030, | 0xa86010, | 0x985808,   0x805008,   0x883010,   0x783018, |
+| 0x584020,<br>0x900010, | 0x883030,<br>0xa80808, | 0x981028, | 0x801020, | 0x800010,   0x780008,   0x680008,   0x461008, |
+| 0xc00818,<br>0xe07008, | 0xe00810,<br>0xde7003, | 0xf81010, | 0xe03800, | 0xe84800,   0xf84000,   0xf85008,   0xf85008, |
+| 0xe67800,<br>0xfdaf1a, | 0xd88000,<br>0xf0a028, | 0xd89800, | 0xe89800, | 0xf0a000,   0xffb200,   0xffc100,   0xffcc04, |
+| 0xe09020,<br>0xa89048, | 0xf07030,<br>0xa89828, | 0xfa7338,<br> | 0xf0a048, | 0xe8a848,   0xd0a048,   0x6d371b,   0xa89060, |
+| 0x809828,<br>0xf8e858, | 0x708828,<br>0xf8d060, | 0x588820,<br> | 0x619b1e, | 0x6db21c,   0x79cc1b,   0xd0c828,   0xe8e830, |
+| 0xfcc56d,<br>0xc07070, | 0xf0c058,<br>0x989880, | 0xe07868,<br> | 0xd86060, | 0xe05860,   0xc54969,   0xb05060,   0xb86870, |
+| <br>0xa09890,<br>0xa03008, | <br>0xc86030,<br>0xe83058, | <br>0xc06008, | 0xc85808, | 0xcb5c00,   0xd06800,   0xc03808,   0xa83010, |
+| 0x389058,<br>0x260c00, | 0x188820,<br>0x084820, | 0x088913, | 0x086810, | 0x015801,   0x004000,   0x003400,   0x012801, |
+| 0x105030,<br>0xa98954, | 0x007830,<br>0x9f793f, | 0x1088e0, | 0x38a0d8, | 0x1010e8,   0xb79c70,   0xb39668,   0xaf905f, |
+| <br>0x93713a,<br>0x5b4524, | <br>0x8e6d38,<br>0x4f3c1f, | 0x886936, | 0x826433, | 0x7c5f30,   0x75592e,   0x6d532b,   0x654d28, |
+| <br>0x372a16,<br> | <br>0xf7f7c8,<br> | 0xfae68c, | 0xfcdc61, | 0xf8c355,   0xdac078,   0xdfa66c,   0xe6a336, |
+| 0xf2884e, | 0xe3881c, |  |  |  |
+| <br>0xb08b44,<br>0x282814, | <br>0xfc6330,<br>0x004500, | 0xde6b18, | 0x9e610d, | 0xab4400,   0x732828,   0x930800,   0x414820, |
+| <br>0x387338,<br>0xd10028, | <br>0x3f8f3f,<br>0xfa0032, | 0x519c51, | 0x63bd63, | 0x7ef37e,   0x502f1b,   0x790018,   0xa10020, |
+| <br>0x9e9a1a,<br>0xd5e8f6, | <br>0xccc722,<br>0xcee3f5, | 0xeee602, | 0xfcfcfc, | 0xf3f8fb,   0xedf3fa,   0xe5f0f9,   0xddecf7, |
+| <br>0xc6e0f3,<br>0x88c1eb, | <br>0xbeddf3,<br>0xffffff, | 0xb6d9f2, | 0xafd5f1, | 0xa7d1f0,   0x9fcdee,   0x97c9ed,   0x90c5ec, |
+| <br>0xeeeeee,<br> | <br>0xdddddd,<br> | 0xcccccc, | 0xbbbbbb, | 0xaaaaaa,   0x999999,   0x888888,   0x767676, |
+| 0x656565, | 0x545454, |  |  |  |
+| <br>0x434343, | <br>0x323232, | 0x202020, | 0x101010, | 0x010101, |
 
 }; 
 
